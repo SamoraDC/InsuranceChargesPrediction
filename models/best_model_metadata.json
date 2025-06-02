@@ -1,0 +1,44 @@
+{
+  "model_name": "Gradient Boosting",
+  "model_type": "GradientBoostingRegressor",
+  "selection_method": "composite_score_all_metrics",
+  "composite_score": 0.9242961838901393,
+  "rank": 1,
+  "performance": {
+    "MAE": 2596.9218781651766,
+    "MSE": 20160038.993749492,
+    "RMSE": 4489.993206425762,
+    "MAPE": 32.8349422961636,
+    "R\u00b2": 0.8902891227075889,
+    "Adjusted_R\u00b2": 0.8837587133449454,
+    "MBE": 166.7380623072712
+  },
+  "normalized_scores": {
+    "R\u00b2": 1.0,
+    "Adjusted_R\u00b2": 1.0,
+    "MAE": 1.0,
+    "RMSE": 1.0,
+    "MAPE": 0.9416964405780568,
+    "MBE_abs": 0.6019142234664023,
+    "CV_R\u00b2_std": 0.39105895740056085,
+    "CV_MAE_std": 0.9493398328913638
+  },
+  "cv_performance": {
+    "r2_mean": 0.8395436129161432,
+    "r2_std": 0.019000252428346447,
+    "mae_mean": 2553.9532326034773,
+    "mae_std": 106.87526645654194
+  },
+  "training_date": "2025-06-02T20:02:46.125114",
+  "features_count": 15,
+  "scoring_weights": {
+    "R\u00b2": 0.25,
+    "Adjusted_R\u00b2": 0.15,
+    "MAE": 0.2,
+    "RMSE": 0.15,
+    "MAPE": 0.1,
+    "MBE_abs": 0.05,
+    "CV_R\u00b2_std": 0.05,
+    "CV_MAE_std": 0.05
+  }
+}
