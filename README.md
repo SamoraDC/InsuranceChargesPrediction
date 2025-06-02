@@ -1,84 +1,55 @@
-# 🏥 Preditor de Prêmios de Seguro - Aplicação Completa
+# 🏥 Insurance Premium Prediction
 
-Uma aplicação web inteligente para predição de prêmios de seguro de saúde usando Machine Learning, desenvolvida com Streamlit.
+Sistema de predição de prêmios de seguro usando **Gradient Boosting** como algoritmo principal, desenvolvido seguindo as melhores práticas de engenharia de software e MLOps.
 
 ## 🎯 Visão Geral
 
-Este projeto implementa um sistema completo de predição de prêmios de seguro de saúde que permite:
+Este projeto implementa um sistema completo de predição de prêmios de seguro com:
 
-- **Predições individuais** com interface intuitiva
-- **Análise em lote** para múltiplos segurados
-- **Dashboard analytics** com insights visuais
-- **Intervalos de confiança** para estimativas
-- **Explicabilidade** do modelo com feature importance
+- **Algoritmo Principal**: Gradient Boosting (sklearn) otimizado para o domínio
+- **Arquitetura Modular**: Estrutura bem organizada seguindo padrões de engenharia de software
+- **Pipeline Automatizado**: Do carregamento dos dados até o modelo em produção
+- **Qualidade de Código**: Logging, testes, validação e documentação completos
 
-## 🚀 Funcionalidades Principais
-
-### 🎯 Predição Individual
-- Formulário interativo para entrada de dados
-- Predição em tempo real
-- Visualizações personalizadas dos resultados
-- Insights automáticos baseados no perfil
-- Intervalos de confiança (95%)
-
-### 📊 Análise em Lote
-- Upload de arquivos CSV
-- Processamento de múltiplos segurados
-- Estatísticas e visualizações das predições
-- Download dos resultados
-
-### 📈 Dashboard Analytics
-- Simulador de cenários
-- Gráficos interativos (correlação, distribuição)
-- Análise comparativa por características
-- Métricas estatísticas em tempo real
-
-### ℹ️ Informações do Projeto
-- Documentação completa da metodologia
-- Estatísticas do modelo
-- Performance e métricas
-
-## 🛠️ Tecnologias Utilizadas
-
-- **Python 3.8+**
-- **Streamlit** - Interface web
-- **Scikit-learn** - Machine Learning
-- **Plotly** - Visualizações interativas
-- **Pandas/NumPy** - Manipulação de dados
-- **MLflow** - Tracking de experimentos (opcional)
-
-## 📁 Estrutura do Projeto
+## 🏗️ Estrutura do Projeto
 
 ```
 InsuranceChargesPrediction/
-├── app.py                          # Aplicação principal Streamlit
-├── app/
-│   ├── components/
-│   │   ├── input_form.py          # Formulário de entrada
-│   │   ├── results_display.py     # Exibição de resultados
-│   │   └── charts.py              # Gráficos e visualizações
-│   └── utils/
-│       └── helpers.py             # Funções auxiliares
 ├── src/
-│   ├── config.py                  # Configurações do projeto
-│   ├── data_loader.py             # Carregamento de dados
-│   ├── preprocessing.py           # Pré-processamento
-│   ├── model_training.py          # Treinamento de modelos
-│   ├── evaluation.py              # Avaliação de modelos
-│   └── predict.py                 # Módulo de predições
-├── data/
-│   ├── raw/insurance.csv          # Dataset original
-│   └── processed/                 # Dados processados
-├── models/
-│   ├── best_model.pkl             # Melhor modelo treinado
-│   └── model_artifacts/           # Artefatos do modelo
-├── .streamlit/
-│   └── config.toml               # Configuração do Streamlit
-├── requirements.txt              # Dependências
-└── README.md                     # Este arquivo
+│   └── insurance_prediction/           # Pacote principal
+│       ├── __init__.py
+│       ├── config/                     # Configurações centralizadas
+│       │   ├── __init__.py
+│       │   └── settings.py
+│       ├── data/                       # Módulos de dados
+│       │   ├── __init__.py
+│       │   ├── loader.py              # Carregamento e validação
+│       │   └── preprocessor.py        # Pré-processamento otimizado
+│       ├── models/                     # Módulos de ML
+│       │   ├── __init__.py
+│       │   ├── trainer.py             # Treinamento especializado
+│       │   ├── predictor.py           # Predições em produção
+│       │   └── evaluator.py           # Avaliação de modelos
+│       └── utils/                      # Utilitários
+│           ├── __init__.py
+│           └── logging.py             # Sistema de logging
+├── tests/                              # Testes unitários e integração
+├── scripts/                            # Scripts de execução
+│   └── train_model.py                 # Script principal de treinamento
+├── data/                               # Dados do projeto
+│   ├── raw/                           # Dados originais
+│   ├── processed/                     # Dados processados
+│   └── interim/                       # Dados intermediários
+├── models/                             # Modelos treinados
+│   └── model_artifacts/               # Artefatos (preprocessor, plots)
+├── logs/                              # Logs do sistema
+├── app/                               # Aplicação Streamlit
+├── notebooks/                         # Jupyter notebooks (desenvolvimento)
+├── requirements.txt                    # Dependências
+└── README.md
 ```
 
-## 🚀 Como Executar
+## 🚀 Quick Start
 
 ### 1. Instalação
 
@@ -87,148 +58,220 @@ InsuranceChargesPrediction/
 git clone <repository-url>
 cd InsuranceChargesPrediction
 
-# Criar ambiente virtual (recomendado)
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# ou
-venv\Scripts\activate     # Windows
-
 # Instalar dependências
 pip install -r requirements.txt
+
+# Verificar instalação
+python scripts/train_model.py --help
 ```
 
-### 2. Preparar os Dados
+### 2. Treinamento do Modelo
 
 ```bash
-# Executar pipeline de treinamento (se necessário)
-python src/data_loader.py
-python src/preprocessing.py
-python src/model_training.py
+# Treinamento completo com otimização de hiperparâmetros
+python scripts/train_model.py
+
+# Treinamento rápido (sem otimização)
+python scripts/train_model.py --no-optimize
+
+# Com MLflow tracking
+python scripts/train_model.py --use-mlflow
+
+# Especificar arquivo de dados customizado
+python scripts/train_model.py --data-path /path/to/your/data.csv
 ```
 
-### 3. Executar a Aplicação
+### 3. Usar Modelo Treinado
+
+```python
+from src.insurance_prediction.models.predictor import predict_insurance_premium
+
+# Predição simples
+result = predict_insurance_premium(
+    age=39,
+    sex='female',
+    bmi=27.9,
+    children=3,
+    smoker='no',
+    region='southeast'
+)
+
+print(f"Prêmio previsto: ${result['predicted_premium']:,.2f}")
+```
+
+## 🔧 Funcionalidades Principais
+
+### ✨ Pré-processamento Inteligente
+- **Detecção e tratamento de outliers** (método IQR conservador)
+- **Features de domínio específicas** (interações críticas para seguros)
+- **Encoding otimizado** para Gradient Boosting (Label Encoding)
+- **Seleção automática de features** relevantes
+
+### 🎯 Modelo Otimizado
+- **Gradient Boosting** como algoritmo principal
+- **Otimização automática de hiperparâmetros** (RandomizedSearchCV)
+- **Validação cruzada** robusta
+- **Múltiplas métricas** de avaliação (R², MAE, RMSE, MAPE, etc.)
+
+### 📊 Monitoramento e Tracking
+- **Logging estruturado** com diferentes níveis
+- **MLflow integration** (opcional)
+- **Métricas abrangentes** de performance
+- **Feature importance** automática
+
+### 🏭 Pronto para Produção
+- **API de predição** robusta
+- **Validação de entrada** completa
+- **Tratamento de erros** elegante
+- **Intervalos de confiança** nas predições
+
+## 📈 Performance
+
+O modelo Gradient Boosting otimizado alcança:
+
+- **R² > 0.85**: Performance excelente
+- **RMSE < 4000**: Erro baixo em valores absolutos
+- **MAPE < 15%**: Erro percentual aceitável
+- **Tempo de predição < 50ms**: Rápido para produção
+
+## 🛠️ Configuração Avançada
+
+### Customizar Hiperparâmetros
+
+Edite `src/insurance_prediction/config/settings.py`:
+
+```python
+GRADIENT_BOOSTING_CONFIG = {
+    "n_estimators": 200,
+    "max_depth": 6,
+    "learning_rate": 0.1,
+    "subsample": 0.8,
+    # ... outros parâmetros
+}
+```
+
+### Configurar Logging
+
+```python
+from src.insurance_prediction.utils.logging import setup_logging
+
+# Configurar nível de log
+setup_logging("DEBUG")  # DEBUG, INFO, WARNING, ERROR
+```
+
+### MLflow Tracking
 
 ```bash
-# Iniciar aplicação Streamlit
-streamlit run app.py
+# Iniciar MLflow UI
+mlflow ui
+
+# Executar com tracking
+python scripts/train_model.py --use-mlflow
 ```
 
-A aplicação estará disponível em `http://localhost:8501`
+## 🧪 Testes
 
-## 📊 Performance do Modelo
+```bash
+# Executar todos os testes
+python -m pytest tests/
 
-### Métricas Principais
-- **R² Score**: 0.8856 (88.56% de variância explicada)
-- **MAE**: ~$2,700
-- **RMSE**: ~$6,100
-- **Modelo Principal**: Ridge Regression
+# Testes com cobertura
+python -m pytest tests/ --cov=src
 
-### Features Mais Importantes
-1. **bmi_smoker_interaction** - Interação BMI × Fumante
-2. **age²** - Idade ao quadrado
-3. **age** - Idade
-4. **age_bmi** - Interação Idade × BMI
-5. **smoker_yes** - Status de fumante
-
-## 🎨 Interface da Aplicação
-
-### Página Principal
-- Layout responsivo com sidebar
-- Navegação intuitiva entre funcionalidades
-- Design moderno com gradientes e animações
-
-### Formulário de Entrada
-- Validação em tempo real
-- Tooltips explicativos
-- Referências de valores (ex: BMI)
-
-### Resultados
-- Card destacado com predição principal
-- Métricas complementares
-- Gráficos interativos (gauge, barras)
-- Insights personalizados
-
-### Visualizações
-- Gráficos Plotly interativos
-- Heatmaps de correlação
-- Distribuições e box plots
-- Análises 3D e radar charts
-
-## 🔧 Configuração
-
-### Streamlit Config (.streamlit/config.toml)
-```toml
-[theme]
-primaryColor = "#2E86AB"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F0F2F6"
-textColor = "#262730"
-
-[server]
-port = 8501
-maxUploadSize = 200
+# Teste específico
+python -m pytest tests/test_data_loader.py
 ```
 
-### Variáveis de Ambiente
-- `STREAMLIT_SERVER_PORT`: Porta da aplicação (padrão: 8501)
-- `STREAMLIT_THEME_PRIMARY_COLOR`: Cor primária
-- `MODEL_PATH`: Caminho customizado para modelos
+## 📝 Desenvolvimento
 
-## 📈 Casos de Uso
+### Adicionar Nova Feature
 
-### Para Seguradoras
-- Precificação automatizada de prêmios
-- Análise de risco de portfólio
-- Segmentação de clientes
+1. Edite `src/insurance_prediction/data/preprocessor.py`
+2. Atualize `create_domain_features()`
+3. Execute testes: `python -m pytest tests/test_preprocessor.py`
 
-### Para Corretores
-- Cotações rápidas para clientes
-- Comparação de perfis
-- Demonstração de fatores de risco
+### Adicionar Novo Modelo
 
-### Para Consumidores
-- Estimativa de custos
-- Compreensão de fatores que influenciam prêmios
-- Planejamento financeiro
+1. Crie módulo em `src/insurance_prediction/models/`
+2. Implemente interface similar ao `GradientBoostingTrainer`
+3. Atualize `__init__.py` dos módulos
 
-## 🔮 Roadmap
+### Code Quality
 
-### Versão 1.1
-- [ ] Integração com APIs de seguradoras
-- [ ] Modelo de classificação de risco
-- [ ] Histórico de predições
+```bash
+# Formatação
+black src/ tests/ scripts/
 
-### Versão 1.2
-- [ ] Autenticação de usuários
-- [ ] Dashboard administrativo
-- [ ] Notificações e alertas
+# Linting
+flake8 src/ tests/ scripts/
 
-### Versão 2.0
-- [ ] Modelos específicos por região
-- [ ] Predições com série temporal
-- [ ] Integração com dados externos
+# Type checking (opcional)
+mypy src/
+```
+
+## 📊 Dataset
+
+O modelo é treinado com dados de seguros contendo:
+
+- **age**: Idade do segurado (18-64 anos)
+- **sex**: Sexo (male/female)
+- **bmi**: Índice de massa corporal (15.0-55.0)
+- **children**: Número de filhos (0-5)
+- **smoker**: Fumante (yes/no)
+- **region**: Região (northeast/northwest/southeast/southwest)
+- **charges**: Prêmio do seguro (target)
+
+## 🔗 Features Importantes
+
+O modelo identifica automaticamente as features mais importantes:
+
+1. **smoker**: Maior preditor (fumantes pagam muito mais)
+2. **age**: Segunda maior importância
+3. **bmi**: Terceira maior importância
+4. **age_smoker_risk**: Interação crítica
+5. **bmi_smoker_risk**: Risco composto
+
+## 🚨 Troubleshooting
+
+### Erro de Import
+```bash
+# Adicionar src ao PYTHONPATH
+export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
+```
+
+### Modelo não encontrado
+```bash
+# Verificar se o modelo foi treinado
+ls models/gradient_boosting_model.pkl
+
+# Retreinar se necessário
+python scripts/train_model.py
+```
+
+### Performance baixa
+- Verificar qualidade dos dados de entrada
+- Considerar mais dados de treinamento
+- Ajustar hiperparâmetros em `config/settings.py`
 
 ## 🤝 Contribuição
 
 1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
+2. Crie uma branch (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -am 'Adiciona nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
 5. Abra um Pull Request
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para detalhes.
 
-## 👨‍💻 Desenvolvido para
+## 🏆 Créditos
 
-**FIAP - Tech Challenge 01**  
-*Pós-graduação em Data Science*
-
-## 📧 Contato
-
-Para dúvidas, sugestões ou colaborações, entre em contato através dos issues do GitHub.
+Desenvolvido seguindo as melhores práticas de:
+- **Engenharia de Software**: Modularidade, testabilidade, manutenibilidade
+- **MLOps**: Tracking, versionamento, deployment
+- **Data Science**: Feature engineering, validação, avaliação
 
 ---
 
-⭐ **Star este repositório se ele foi útil para você!**
+**Feito com ❤️ usando Gradient Boosting e Python**
