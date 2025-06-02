@@ -49,10 +49,10 @@ CATEGORICAL_VALUES = {
     "region": ["northeast", "northwest", "southeast", "southwest"]
 }
 
-# Ranges válidos para variáveis numéricas
+# Ranges válidos para variáveis numéricas (baseado no dataset real)
 NUMERICAL_RANGES = {
     "age": {"min": 18, "max": 64},
-    "bmi": {"min": 15.0, "max": 53.0},
+    "bmi": {"min": 15.0, "max": 55.0},  # Ajustado para acomodar valor máximo observado
     "children": {"min": 0, "max": 5}
 }
 
