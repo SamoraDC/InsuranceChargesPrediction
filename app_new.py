@@ -334,11 +334,10 @@ def render_comparison_chart(input_data, premium):
     fig.update_layout(
         title="Comparação de Prêmios por Categoria",
         yaxis_title="Prêmio Anual ($)",
+        yaxis=dict(tickformat='$,.0f'),
         height=400,
         showlegend=False
     )
-    
-    fig.update_yaxis(tickformat='$,.0f')
     
     st.plotly_chart(fig, use_container_width=True)
 
