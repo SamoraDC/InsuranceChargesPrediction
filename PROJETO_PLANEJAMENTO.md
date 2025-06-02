@@ -66,7 +66,7 @@ insurance_project/
 - **Visualização**: matplotlib, seaborn
 - **ML/Estatística**: scikit-learn, scipy
 - **Pré-processamento**: StandardScaler, OneHotEncoder, ColumnTransformer, Pipeline
-- **Modelos**: LinearRegression, DecisionTreeRegressor, RandomForestRegressor, GradientBoostingRegressor
+- **Modelos**: LinearRegression, DecisionTreeRegressor, RandomForestRegressor, GradientBoostingRegressor, XGBoost
 - **Feature Engineering**: PolynomialFeatures, category_encoders
 - **Feature Selection**: SelectKBest, SelectFromModel, RFE
 - **Validação**: cross_val_score, train_test_split
