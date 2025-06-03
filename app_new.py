@@ -541,16 +541,16 @@ def render_bmi_info(bmi, lang):
 
 def render_prediction_result(result, lang):
     """Renderiza o resultado da predição."""
-    st.subheader("🔮 Resultado da Predição")
+    st.subheader(t("prediction_result", lang))
     
     premium = result['predicted_premium']
     
     # Card principal com o resultado
     st.markdown(f"""
     <div class="prediction-card">
-        <h2>💰 Convênio Estimado</h2>
+        <h2>💰 {t("estimated_insurance", lang)}</h2>
         <h1>${premium:,.2f}</h1>
-        <p>Valor anual do convênio médico</p>
+        <p>{t("annual_insurance", lang)}</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -559,24 +559,24 @@ def render_prediction_result(result, lang):
     
     with col1:
         st.metric(
-            "💳 Mensal",
+            f"💳 {t('monthly', lang)}",
             f"${premium/12:,.2f}",
-            help="Valor mensal aproximado"
+            help=t("monthly_approx", lang)
         )
     
     with col2:
         processing_time = result.get('processing_time_ms', 0)
         st.metric(
-            "⚡ Processamento",
+            f"⚡ {t('processing', lang)}",
             f"{processing_time:.1f}ms",
-            help="Tempo de processamento"
+            help=t("processing_time", lang)
         )
     
     with col3:
         st.metric(
-            "🤖 Modelo",
+            f"🤖 {t('model', lang)}",
             result.get('model_type', 'N/A'),
-            help="Algoritmo utilizado"
+            help=t("algorithm_used", lang)
         )
     
     # Análise de risco
@@ -584,32 +584,32 @@ def render_prediction_result(result, lang):
 
 def render_risk_analysis(input_data, premium, lang):
     """Renderiza análise de risco."""
-    st.subheader("📊 Análise de Risco")
+    st.subheader(t("risk_analysis", lang))
     
     # Fatores de risco
     risk_factors = []
     
     if input_data['smoker'] == 'yes':
-        risk_factors.append("🚬 Fumante - ALTO RISCO")
+        risk_factors.append(t("high_risk_smoker", lang))
     
     if input_data['age'] > 50:
-        risk_factors.append("👴 Idade avançada")
+        risk_factors.append(t("advanced_age", lang))
     
     if input_data['bmi'] > 30:
-        risk_factors.append("⚖️ BMI elevado (obesidade)")
+        risk_factors.append(t("high_bmi", lang))
     
     if input_data['bmi'] < 18.5:
-        risk_factors.append("⚖️ BMI baixo (abaixo do peso)")
+        risk_factors.append(t("low_bmi", lang))
     
     if risk_factors:
         st.markdown('<div class="warning-box">', unsafe_allow_html=True)
-        st.write("⚠️ **Fatores que elevam o convênio:**")
+        st.write(t("factors_increase", lang))
         for factor in risk_factors:
             st.write(f"- {factor}")
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="success-box">', unsafe_allow_html=True)
-        st.write("✅ **Perfil de baixo risco** - Poucos fatores que elevam o convênio")
+        st.write(t("low_risk_profile", lang))
         st.markdown('</div>', unsafe_allow_html=True)
     
     # Comparação com médias
@@ -617,10 +617,15 @@ def render_risk_analysis(input_data, premium, lang):
 
 def render_comparison_chart(input_data, premium, lang):
     """Renderiza gráfico de comparação."""
-    st.subheader("📈 Comparação com Perfis Similares")
+    st.subheader(t("comparison_title", lang))
     
     # Criar dados de comparação (simulados baseados no perfil)
-    categories = ['Seu Perfil', 'Não Fumantes', 'Fumantes', 'Média Geral']
+    categories = [
+        t("your_profile", lang), 
+        t("non_smokers", lang), 
+        t("smokers", lang), 
+        t("general_average", lang)
+    ]
     
     # Estimativas baseadas no conhecimento do modelo
     if input_data['smoker'] == 'yes':
@@ -635,8 +640,8 @@ def render_comparison_chart(input_data, premium, lang):
     ])
     
     fig.update_layout(
-        title="Comparação de Convênios por Categoria",
-        yaxis_title="Convênio Anual ($)",
+        title=t("comparison_chart_title", lang),
+        yaxis_title=t("annual_insurance", lang),
         yaxis=dict(tickformat='$,.0f'),
         height=400,
         showlegend=False
@@ -646,12 +651,12 @@ def render_comparison_chart(input_data, premium, lang):
 
 def render_batch_analysis(lang):
     """Renderiza análise em lote."""
-    st.header("📊 Análise em Lote")
+    st.header(t("batch_analysis", lang))
     
-    st.info("💡 Faça upload de um arquivo CSV com múltiplos segurados para análise em massa.")
+    st.info(t("batch_info", lang))
     
     # Template para download
-    if st.button("📥 Baixar Template CSV"):
+    if st.button(t("download_template", lang)):
         template_data = {
             'age': [35, 45, 28],
             'sex': ['male', 'female', 'male'],
@@ -665,28 +670,28 @@ def render_batch_analysis(lang):
         csv = template_df.to_csv(index=False)
         
         st.download_button(
-            label="Baixar template.csv",
+            label=f"{t('download_template', lang)}.csv",
             data=csv,
-            file_name="template_segurados.csv",
+            file_name=t("filename_template", lang),
             mime="text/csv"
         )
     
     # Upload de arquivo
     uploaded_file = st.file_uploader(
-        "Escolha um arquivo CSV",
+        t("choose_csv", lang),
         type=['csv'],
-        help="Arquivo deve conter colunas: age, sex, bmi, children, smoker, region"
+        help=t("csv_help", lang)
     )
     
     if uploaded_file is not None:
         try:
             df = pd.read_csv(uploaded_file)
             
-            st.subheader("📋 Dados Carregados")
+            st.subheader(t("data_loaded", lang))
             st.dataframe(df.head())
             
-            if st.button("🔮 Processar Predições em Lote"):
-                with st.spinner("Processando predições..." if lang == 'pt' else "Processing predictions..."):
+            if st.button(t("process_batch", lang)):
+                with st.spinner(t("processing_predictions", lang)):
                     # Processar predições para cada linha
                     predictions = []
                     
@@ -709,29 +714,29 @@ def render_batch_analysis(lang):
                     df['predicted_premium'] = predictions
                     
                     # Mostrar resultados
-                    st.subheader("📊 Resultados")
+                    st.subheader(t("results", lang))
                     st.dataframe(df)
                     
                     # Estatísticas
                     col1, col2, col3 = st.columns(3)
                     
                     with col1:
-                        st.metric("📊 Total de Registros", len(df))
+                        st.metric(t("total_records", lang), len(df))
                     
                     with col2:
                         avg_premium = df['predicted_premium'].mean()
-                        st.metric("💰 Convênio Médio", f"${avg_premium:,.2f}")
+                        st.metric(t("average_insurance", lang), f"${avg_premium:,.2f}")
                     
                     with col3:
                         total_revenue = df['predicted_premium'].sum()
-                        st.metric("💵 Receita Total", f"${total_revenue:,.2f}")
+                        st.metric(t("total_revenue", lang), f"${total_revenue:,.2f}")
                     
                     # Download dos resultados
                     csv_result = df.to_csv(index=False)
                     st.download_button(
-                        label="📥 Baixar Resultados",
+                        label=t("download_results", lang),
                         data=csv_result,
-                        file_name="predicoes_seguro.csv",
+                        file_name=t("filename_results", lang),
                         mime="text/csv"
                     )
                     
@@ -740,32 +745,32 @@ def render_batch_analysis(lang):
 
 def render_about_tab(lang):
     """Renderiza a seção sobre o projeto."""
-    st.header("ℹ️ Sobre o Projeto")
+    st.header(t("about_project", lang))
     
-    st.markdown("""
-    ### 🎯 Objetivo
-    Sistema de predição de Preço de convênios médicos usando técnicas avançadas de Machine Learning.
+    st.markdown(f"""
+    ### {t('objective', lang)}
+    {t('objective_text', lang)}
     
-    ### 🤖 Tecnologia
-    - **Algoritmo:** Gradient Boosting (sklearn)
-    - **Performance:** R² > 0.85, RMSE < 4000
-    - **Arquitetura:** Modular e seguindo melhores práticas
+    ### {t('technology', lang)}
+    - {t('tech_algorithm', lang)}
+    - {t('tech_performance', lang)}
+    - {t('tech_architecture', lang)}
     
-    ### 📊 Features Importantes
-    1. **Fumante** - Maior impacto no convênio
-    2. **Idade** - Segundo maior impacto
-    3. **BMI** - Terceiro maior impacto
-    4. **Interações** - age_smoker_risk, bmi_smoker_risk
+    ### {t('important_features', lang)}
+    1. {t('feature1', lang)}
+    2. {t('feature2', lang)}
+    3. {t('feature3', lang)}
+    4. {t('feature4', lang)}
     
-    ### 🔧 Como Usar
-    1. Treine o modelo: `python scripts/train_model.py`
-    2. Execute a aplicação: `streamlit run app_new.py`
-    3. Preencha os dados e obtenha predições
+    ### {t('how_to_use_about', lang)}
+    1. {t('usage1', lang)}
+    2. {t('usage2', lang)}
+    3. {t('usage3', lang)}
     
-    ### 📈 Métricas de Qualidade
-    - Precisão alta em predições
-    - Tempo de resposta < 50ms
-    - Validação robusta de entrada
+    ### {t('quality_metrics', lang)}
+    - {t('high_precision', lang)}
+    - {t('fast_response', lang)}
+    - {t('robust_validation', lang)}
     """)
 
 def main():
