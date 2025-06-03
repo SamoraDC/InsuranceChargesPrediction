@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-🏥 Insurance Premium Predictor - Streamlit App
-🏥 Preditor de Prêmio de Seguro - Aplicativo Streamlit
+🏥 Insurance Charges Predictor - Streamlit App
+🏥 Preditor de Preço de Convênio Médico - Aplicativo Streamlit
 
-Bilingual Insurance Premium Prediction App
-Aplicativo Bilíngue de Predição de Prêmio de Seguro
+Bilingual Insurance Charges Prediction App
+Aplicativo Bilíngue de Predição de Preço de Convênio Médico
 """
 
 import streamlit as st
@@ -32,8 +32,8 @@ from insurance_prediction.utils.logging import setup_logging, get_logger
 TRANSLATIONS = {
     "en": {
         # App Config
-        "page_title": "🏥 Insurance Premium Predictor",
-        "main_header": "🏥 Insurance Premium Predictor",
+        "page_title": "🏥 Insurance Charges Predictor",
+        "main_header": "🏥 Insurance Charges Predictor",
         "sub_header": "AI-powered system using Gradient Boosting algorithm",
         
         # Navigation
@@ -52,10 +52,10 @@ TRANSLATIONS = {
         "quick_guide": "📖 Quick Guide",
         "how_to_use": "How to use:",
         "step1": "1. Fill in insured person's data",
-        "step2": "2. Click 'Calculate Premium'",
+        "step2": "2. Click 'Calculate Insurance'",
         "step3": "3. View prediction and analysis",
         "important_vars": "Important variables:",
-        "smoker_impact": "🚬 **Smoker**: Highest impact on premium",
+        "smoker_impact": "🚬 **Smoker**: Highest impact on insurance",
         "age_impact": "👤 **Age**: Second highest impact",
         "bmi_impact": "⚖️ **BMI**: Third highest impact",
         
@@ -70,7 +70,7 @@ TRANSLATIONS = {
         "smoker": "🚬 Smoker",
         "non_smoker": "🚭 Non-smoker",
         "smoker_yes": "🚬 Smoker",
-        "smoker_help": "Smoking status (highest impact on premium)",
+        "smoker_help": "Smoking status (highest impact on insurance)",
         "bmi": "⚖️ BMI (Body Mass Index)",
         "bmi_help": "Body Mass Index (15.0-55.0)",
         "children": "👶 Number of Children",
@@ -90,12 +90,12 @@ TRANSLATIONS = {
         "obesity": "Obesity",
         
         # Prediction Button
-        "calculate_btn": "🔮 Calculate Premium",
+        "calculate_btn": "🔮 Calculate insurance",
         "calculating": "Calculating prediction...",
         
         # Results
         "prediction_result": "🔮 Prediction Result",
-        "estimated_premium": "💰 Estimated Premium",
+        "estimated_insurance": "💰 Estimated Insurance",
         "annual_insurance": "Annual health insurance value",
         "monthly": "💳 Monthly",
         "monthly_approx": "Approximate monthly value",
@@ -106,15 +106,15 @@ TRANSLATIONS = {
         
         # Risk Analysis
         "risk_analysis": "📊 Risk Analysis",
-        "factors_increase": "⚠️ **Factors that increase premium:**",
-        "low_risk_profile": "✅ **Low risk profile** - Few factors that increase premium",
+        "factors_increase": "⚠️ **Factors that increase insurance:**",
+        "low_risk_profile": "✅ **Low risk profile** - Few factors that increase insurance",
         "comparison_title": "📈 Comparison with Similar Profiles",
         "your_profile": "Your Profile",
         "non_smokers": "Non-smokers",
         "smokers": "Smokers", 
         "general_average": "General Average",
-        "comparison_chart_title": "Premium Comparison by Category",
-        "annual_premium": "Annual Premium ($)",
+        "comparison_chart_title": "Insurance Comparison by Category",
+        "annual_insurance": "Annual Insurance ($)",
         
         # Risk Factors
         "high_risk_smoker": "🚬 Smoker - HIGH RISK",
@@ -133,20 +133,20 @@ TRANSLATIONS = {
         "processing_predictions": "Processing predictions...",
         "results": "📊 Results",
         "total_records": "📊 Total Records",
-        "average_premium": "💰 Average Premium",
+        "average_insurance": "💰 Average Insurance",
         "total_revenue": "💵 Total Revenue",
         "download_results": "📥 Download Results",
         
         # About Section
         "about_project": "ℹ️ About the Project",
         "objective": "🎯 Objective",
-        "objective_text": "Health insurance premium prediction system using advanced Machine Learning techniques.",
+        "objective_text": "Health insurance charges prediction system using advanced Machine Learning techniques.",
         "technology": "🤖 Technology",
         "tech_algorithm": "**Algorithm:** Gradient Boosting (sklearn)",
         "tech_performance": "**Performance:** R² > 0.85, RMSE < 4000", 
         "tech_architecture": "**Architecture:** Modular following best practices",
         "important_features": "📊 Important Features",
-        "feature1": "**Smoker** - Highest impact on premium",
+        "feature1": "**Smoker** - Highest impact on insurance",
         "feature2": "**Age** - Second highest impact",
         "feature3": "**BMI** - Third highest impact", 
         "feature4": "**Interactions** - age_smoker_risk, bmi_smoker_risk",
@@ -173,8 +173,8 @@ TRANSLATIONS = {
     
     "pt": {
         # App Config  
-        "page_title": "🏥 Preditor de Prêmio de Seguro",
-        "main_header": "🏥 Preditor de Prêmio de Seguro", 
+        "page_title": "🏥 Preditor de Preço de Convênio Médico",
+        "main_header": "🏥 Preditor de Preço de Convênio Médico", 
         "sub_header": "Sistema inteligente usando algoritmo Gradient Boosting",
         
         # Navigation
@@ -193,10 +193,10 @@ TRANSLATIONS = {
         "quick_guide": "📖 Guia Rápido",
         "how_to_use": "Como usar:",
         "step1": "1. Preencha os dados do segurado",
-        "step2": "2. Clique em 'Calcular Prêmio'",
+        "step2": "2. Clique em 'Calcular Convênio'",
         "step3": "3. Veja a predição e análise",
         "important_vars": "Variáveis importantes:",
-        "smoker_impact": "🚬 **Fumante**: Maior impacto no prêmio",
+        "smoker_impact": "🚬 **Fumante**: Maior impacto no convênio",
         "age_impact": "👤 **Idade**: Segundo maior impacto", 
         "bmi_impact": "⚖️ **BMI**: Terceiro maior impacto",
         
@@ -211,7 +211,7 @@ TRANSLATIONS = {
         "smoker": "🚬 Fumante",
         "non_smoker": "🚭 Não Fumante",
         "smoker_yes": "🚬 Fumante",
-        "smoker_help": "Status de fumante (maior impacto no prêmio)",
+        "smoker_help": "Status de fumante (maior impacto no convênio)",
         "bmi": "⚖️ BMI (Índice de Massa Corporal)",
         "bmi_help": "Índice de Massa Corporal (15.0-55.0)",
         "children": "👶 Número de Filhos",
@@ -231,13 +231,13 @@ TRANSLATIONS = {
         "obesity": "Obesidade",
         
         # Prediction Button
-        "calculate_btn": "🔮 Calcular Prêmio",
+        "calculate_btn": "🔮 Calcular Convênio",
         "calculating": "Calculando predição...",
         
         # Results
         "prediction_result": "🔮 Resultado da Predição",
-        "estimated_premium": "💰 Prêmio Estimado",
-        "annual_insurance": "Valor anual do seguro de saúde",
+        "estimated_insurance": "💰 Convênio Estimado",
+        "annual_insurance": "Valor anual do convênio médico",
         "monthly": "💳 Mensal",
         "monthly_approx": "Valor mensal aproximado",
         "processing": "⚡ Processamento",
@@ -247,15 +247,15 @@ TRANSLATIONS = {
         
         # Risk Analysis  
         "risk_analysis": "📊 Análise de Risco",
-        "factors_increase": "⚠️ **Fatores que elevam o prêmio:**",
-        "low_risk_profile": "✅ **Perfil de baixo risco** - Poucos fatores que elevam o prêmio",
+        "factors_increase": "⚠️ **Fatores que elevam o convênio:**",
+        "low_risk_profile": "✅ **Perfil de baixo risco** - Poucos fatores que elevam o convênio",
         "comparison_title": "📈 Comparação com Perfis Similares",
         "your_profile": "Seu Perfil",
         "non_smokers": "Não Fumantes", 
         "smokers": "Fumantes",
         "general_average": "Média Geral",
-        "comparison_chart_title": "Comparação de Prêmios por Categoria",
-        "annual_premium": "Prêmio Anual ($)",
+        "comparison_chart_title": "Comparação de Convênios por Categoria",
+        "annual_insurance": "Convênio Anual ($)",
         
         # Risk Factors
         "high_risk_smoker": "🚬 Fumante - ALTO RISCO",
@@ -274,20 +274,20 @@ TRANSLATIONS = {
         "processing_predictions": "Processando predições...",
         "results": "📊 Resultados",
         "total_records": "📊 Total de Registros",
-        "average_premium": "💰 Prêmio Médio", 
+        "average_insurance": "💰 Convênio Médio", 
         "total_revenue": "💵 Receita Total",
         "download_results": "📥 Baixar Resultados",
         
         # About Section
         "about_project": "ℹ️ Sobre o Projeto",
         "objective": "🎯 Objetivo",
-        "objective_text": "Sistema de predição de prêmios de seguro de saúde usando técnicas avançadas de Machine Learning.",
+        "objective_text": "Sistema de predição de Preço de convênios médicos usando técnicas avançadas de Machine Learning.",
         "technology": "🤖 Tecnologia",
         "tech_algorithm": "**Algoritmo:** Gradient Boosting (sklearn)",
         "tech_performance": "**Performance:** R² > 0.85, RMSE < 4000",
         "tech_architecture": "**Arquitetura:** Modular seguindo melhores práticas",
         "important_features": "📊 Features Importantes",
-        "feature1": "**Fumante** - Maior impacto no prêmio",
+        "feature1": "**Fumante** - Maior impacto no convênio",
         "feature2": "**Idade** - Segundo maior impacto",
         "feature3": "**BMI** - Terceiro maior impacto",
         "feature4": "**Interações** - age_smoker_risk, bmi_smoker_risk",
@@ -323,7 +323,7 @@ logger = get_logger(__name__)
 
 # Configuração da página
 st.set_page_config(
-    page_title="🏥 Insurance Premium Predictor",
+    page_title="🏥 Insurance Charges Predictor",
     page_icon="🏥",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -548,9 +548,9 @@ def render_prediction_result(result, lang):
     # Card principal com o resultado
     st.markdown(f"""
     <div class="prediction-card">
-        <h2>💰 Prêmio Estimado</h2>
+        <h2>💰 Convênio Estimado</h2>
         <h1>${premium:,.2f}</h1>
-        <p>Valor anual do seguro de saúde</p>
+        <p>Valor anual do convênio médico</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -603,13 +603,13 @@ def render_risk_analysis(input_data, premium, lang):
     
     if risk_factors:
         st.markdown('<div class="warning-box">', unsafe_allow_html=True)
-        st.write("⚠️ **Fatores que elevam o prêmio:**")
+        st.write("⚠️ **Fatores que elevam o convênio:**")
         for factor in risk_factors:
             st.write(f"- {factor}")
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="success-box">', unsafe_allow_html=True)
-        st.write("✅ **Perfil de baixo risco** - Poucos fatores que elevam o prêmio")
+        st.write("✅ **Perfil de baixo risco** - Poucos fatores que elevam o convênio")
         st.markdown('</div>', unsafe_allow_html=True)
     
     # Comparação com médias
@@ -635,8 +635,8 @@ def render_comparison_chart(input_data, premium, lang):
     ])
     
     fig.update_layout(
-        title="Comparação de Prêmios por Categoria",
-        yaxis_title="Prêmio Anual ($)",
+        title="Comparação de Convênios por Categoria",
+        yaxis_title="Convênio Anual ($)",
         yaxis=dict(tickformat='$,.0f'),
         height=400,
         showlegend=False
@@ -720,7 +720,7 @@ def render_batch_analysis(lang):
                     
                     with col2:
                         avg_premium = df['predicted_premium'].mean()
-                        st.metric("💰 Prêmio Médio", f"${avg_premium:,.2f}")
+                        st.metric("💰 Convênio Médio", f"${avg_premium:,.2f}")
                     
                     with col3:
                         total_revenue = df['predicted_premium'].sum()
@@ -744,7 +744,7 @@ def render_about_tab(lang):
     
     st.markdown("""
     ### 🎯 Objetivo
-    Sistema de predição de prêmios de seguro de saúde usando técnicas avançadas de Machine Learning.
+    Sistema de predição de Preço de convênios médicos usando técnicas avançadas de Machine Learning.
     
     ### 🤖 Tecnologia
     - **Algoritmo:** Gradient Boosting (sklearn)
@@ -752,7 +752,7 @@ def render_about_tab(lang):
     - **Arquitetura:** Modular e seguindo melhores práticas
     
     ### 📊 Features Importantes
-    1. **Fumante** - Maior impacto no prêmio
+    1. **Fumante** - Maior impacto no convênio
     2. **Idade** - Segundo maior impacto
     3. **BMI** - Terceiro maior impacto
     4. **Interações** - age_smoker_risk, bmi_smoker_risk
