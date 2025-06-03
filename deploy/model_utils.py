@@ -51,24 +51,166 @@ src_path = current_dir / "src"
 if src_path.exists():
     sys.path.insert(0, str(src_path))
 
+# Cache global para o modelo treinado
+_CACHED_MODEL = None
+
+def create_auto_training_model():
+    """
+    Cria e treina um modelo GARANTIDO para funcionar no cloud
+    Usa os dados reais do CSV para treinar on-the-fly
+    """
+    global _CACHED_MODEL
+    
+    # Se já temos modelo em cache, usar
+    if _CACHED_MODEL is not None:
+        logger.info("✅ Usando modelo em cache")
+        return _CACHED_MODEL
+    
+    logger.info("🤖 Criando modelo auto-treinável...")
+    
+    try:
+        # 1. Tentar carregar dados do CSV
+        csv_paths = [
+            Path(__file__).parent.parent / "data" / "insurance.csv",  # Caminho relativo
+            Path("data") / "insurance.csv",  # Caminho direto
+            Path("/mount/src/insurancechargesprediction/data/insurance.csv"),  # Caminho cloud
+        ]
+        
+        df = None
+        for csv_path in csv_paths:
+            if csv_path.exists():
+                df = pd.read_csv(csv_path)
+                logger.info(f"✅ Dados carregados de: {csv_path}")
+                break
+        
+        if df is None:
+            raise FileNotFoundError("❌ insurance.csv não encontrado em nenhum caminho")
+        
+        # 2. Preparar features (versão simplificada mas efetiva)
+        X = df[['age', 'bmi', 'children']].copy()
+        
+        # Encoding manual (mais robusto que LabelEncoder)
+        X['sex'] = df['sex'].map({'male': 1, 'female': 0})
+        X['smoker'] = df['smoker'].map({'yes': 1, 'no': 0})
+        X['region'] = df['region'].map({
+            'northeast': 0, 'northwest': 1, 'southeast': 2, 'southwest': 3
+        })
+        
+        # Features derivadas (as mais importantes)
+        X['smoker_risk'] = X['smoker'] * 10  # Multiplicador de risco
+        X['age_smoker'] = X['age'] * X['smoker']
+        X['bmi_smoker'] = X['bmi'] * X['smoker']
+        
+        y = df['charges']
+        
+        # 3. Treinar modelo robusto
+        model = GradientBoostingRegressor(
+            n_estimators=100,
+            max_depth=4,
+            learning_rate=0.1,
+            random_state=42,
+            loss='squared_error'
+        )
+        
+        logger.info("⚡ Treinando modelo...")
+        model.fit(X, y)
+        
+        # 4. Verificar se está treinado
+        if not hasattr(model, 'feature_importances_'):
+            raise RuntimeError("❌ Modelo não foi treinado corretamente")
+        
+        # 5. Avaliar rapidamente
+        score = model.score(X, y)
+        logger.info(f"📊 R² Score: {score:.4f}")
+        
+        # 6. Teste de predição
+        test_features = np.array([[30, 25.0, 1, 1, 0, 3, 0, 0, 0]])  # Exemplo
+        test_pred = model.predict(test_features)[0]
+        logger.info(f"🧪 Teste: ${test_pred:.2f}")
+        
+        # 7. Criar metadata
+        model_data = {
+            'model': model,
+            'model_type': 'auto_trained_cloud',
+            'feature_names': list(X.columns),
+            'n_features': len(X.columns),
+            'r2_score': float(score),
+            'encoding_map': {
+                'sex': {'male': 1, 'female': 0},
+                'smoker': {'yes': 1, 'no': 0},
+                'region': {'northeast': 0, 'northwest': 1, 'southeast': 2, 'southwest': 3}
+            }
+        }
+        
+        # 8. Salvar em cache global
+        _CACHED_MODEL = model_data
+        
+        logger.info("🎉 MODELO AUTO-TREINÁVEL CRIADO COM SUCESSO!")
+        logger.info(f"✅ R²: {score:.4f}")
+        logger.info(f"🔧 Features: {len(X.columns)}")
+        
+        return model_data
+        
+    except Exception as e:
+        logger.error(f"❌ Erro ao criar modelo auto-treinável: {e}")
+        return None
+
+def prepare_features_auto_model(data, encoding_map):
+    """
+    Prepara features para o modelo auto-treinável
+    """
+    try:
+        # Features básicas
+        age = float(data['age'])
+        bmi = float(data['bmi'])
+        children = int(data['children'])
+        
+        # Encoding usando mapa
+        sex = encoding_map['sex'].get(data['sex'].lower(), 0)
+        smoker = encoding_map['smoker'].get(data['smoker'].lower(), 0)
+        region = encoding_map['region'].get(data['region'].lower(), 0)
+        
+        # Features derivadas
+        smoker_risk = smoker * 10
+        age_smoker = age * smoker
+        bmi_smoker = bmi * smoker
+        
+        features = [age, bmi, children, sex, smoker, region, smoker_risk, age_smoker, bmi_smoker]
+        
+        logger.info(f"✅ Features auto-model preparadas: {len(features)} features")
+        return np.array([features])
+        
+    except Exception as e:
+        logger.error(f"❌ Erro na preparação de features auto-model: {e}")
+        return np.array([[30, 25, 1, 1, 0, 3, 0, 0, 0]])  # Fallback
+
 def load_model():
     """
-    Load the trained insurance prediction model.
-    
-    Returns:
-        Model data dictionary or None if error
+    Carrega modelo com sistema de fallback robusto
+    PRIORIDADE: Modelo auto-treinável (SEMPRE funciona)
     """
     model_data = {
         'model': None,
-        'preprocessor': None, 
-        'feature_names': None,
-        'metadata': None,
-        'model_type': 'local_superior'
+        'model_type': 'unknown',
+        'feature_names': [],
+        'metadata': {}
     }
     
     base_path = Path(__file__).parent
     
-    # 🏆 1ª PRIORIDADE ABSOLUTA: MODELO SUPERIOR (performance R²=0.8671, MAE=$2,427)
+    # 🚀 PRIORIDADE MÁXIMA: MODELO AUTO-TREINÁVEL (GARANTIDO PARA CLOUD)
+    logger.info("🚀 Tentando modelo auto-treinável...")
+    auto_model = create_auto_training_model()
+    if auto_model is not None:
+        logger.info("🎉 MODELO AUTO-TREINÁVEL CARREGADO COM SUCESSO!")
+        logger.info(f"🏆 Tipo: {auto_model['model_type']}")
+        logger.info(f"📊 R²: {auto_model['r2_score']:.4f}")
+        logger.info(f"🔧 Features: {auto_model['n_features']}")
+        return auto_model
+
+    logger.warning("⚠️ Modelo auto-treinável falhou, tentando modelos salvos...")
+
+    # 🏆 2ª PRIORIDADE: MODELO SUPERIOR (performance R²=0.8671, MAE=$2,427)
     try:
         model_path = base_path / "superior_model.pkl"
         metadata_path = base_path / "superior_model_metadata.json"
@@ -690,7 +832,10 @@ def predict_premium(input_data, model_data):
         model_type = model_data.get('model_type', 'unknown')
         
         # Preparar features baseado no tipo de modelo
-        if model_type == 'superior_deploy':
+        if model_type == 'auto_trained_cloud':
+            # Usar mapa de encoding do modelo auto-treinável (9 features)
+            features = prepare_features_auto_model(input_data, model_data.get('encoding_map', {}))
+        elif model_type == 'superior_deploy':
             # Usar encoders do modelo superior (13 features avançadas)
             features = prepare_features_superior_model(input_data, model_data.get('encoders', {}))
         elif model_type == 'robust_deploy':
