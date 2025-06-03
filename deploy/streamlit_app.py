@@ -665,13 +665,13 @@ def about_tab(lang):
 def get_bmi_category(bmi):
     """Get BMI category."""
     if bmi < 18.5:
-        return "Abaixo do peso"
+        return "Underweight"
     elif bmi < 25:
-        return "Peso normal"
+        return "Normal weight"
     elif bmi < 30:
-        return "Sobrepeso"
+        return "Overweight"
     else:
-        return "Obesidade"
+        return "Obesity"
 
 def map_region_to_english(region_display, lang):
     """Map region display to English values."""
