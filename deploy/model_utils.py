@@ -10,6 +10,10 @@ import joblib
 from pathlib import Path
 from typing import Dict, Any, Optional, Union
 import logging
+import pickle
+import json
+import os
+import sys
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 # Model configuration - Multiple possible paths for robustness
 POSSIBLE_MODEL_PATHS = [
+    "production_model_compatible.pkl",  # ✅ NEW: Version-compatible model
     "models/production_model_optimized.pkl",  # For Streamlit Cloud
     "../models/production_model_optimized.pkl",  # For local development
     "./models/production_model_optimized.pkl",  # Alternative
@@ -38,6 +43,12 @@ CATEGORICAL_VALUES = {
     "region": ["northeast", "northwest", "southeast", "southwest"]
 }
 
+# Add src to path for imports
+current_dir = Path(__file__).parent
+src_path = current_dir / "src" 
+if src_path.exists():
+    sys.path.insert(0, str(src_path))
+
 def load_model():
     """
     Load the trained insurance prediction model.
@@ -45,273 +56,249 @@ def load_model():
     Returns:
         Model data dictionary or None if error
     """
-    try:
-        # Try multiple possible paths
-        model_path = None
-        for path_str in POSSIBLE_MODEL_PATHS:
-            candidate_path = Path(__file__).parent / path_str
-            if candidate_path.exists():
-                model_path = candidate_path
-                break
-            
-            # Also try absolute path from project root
-            project_root = Path(__file__).parent.parent
-            candidate_path = project_root / path_str
-            if candidate_path.exists():
-                model_path = candidate_path
-                break
-        
-        if model_path is None:
-            logger.error("Model file not found in any of the expected locations:")
-            for path_str in POSSIBLE_MODEL_PATHS:
-                logger.error(f"  - {Path(__file__).parent / path_str}")
-                logger.error(f"  - {Path(__file__).parent.parent / path_str}")
-            
-            # Create a dummy model for development/testing
-            logger.warning("Creating dummy model for development purposes")
-            return create_dummy_model()
-            
-        # Load the complete model data (model + scaler + encoders)
-        model_data = joblib.load(model_path)
-        logger.info(f"✅ Model loaded successfully from: {model_path}")
-        
-        # Validate model structure
-        required_keys = ['model', 'scaler', 'encoders', 'feature_names']
-        missing_keys = [key for key in required_keys if key not in model_data]
-        if missing_keys:
-            logger.warning(f"Model missing keys: {missing_keys}")
-            # Try to create missing components
-            model_data = fix_model_structure(model_data)
-        
-        return model_data
-        
-    except Exception as e:
-        logger.error(f"❌ Error loading model: {e}")
-        # Return dummy model as fallback
-        return create_dummy_model()
-
-def create_dummy_model():
-    """
-    Create a dummy model for development/testing when real model is not available.
-    """
-    logger.warning("Creating dummy model - predictions will be estimates only")
-    
-    from sklearn.ensemble import GradientBoostingRegressor
-    from sklearn.preprocessing import StandardScaler, LabelEncoder
-    
-    # Create simple dummy model
-    dummy_model = GradientBoostingRegressor(n_estimators=10, random_state=42)
-    
-    # Create dummy training data to fit the model
-    np.random.seed(42)
-    n_samples = 100
-    X_dummy = np.random.rand(n_samples, 8)  # 8 features after encoding
-    y_dummy = np.random.rand(n_samples) * 50000 + 5000  # Random charges 5k-55k
-    
-    dummy_model.fit(X_dummy, y_dummy)
-    
-    # Create dummy encoders
-    encoders = {}
-    for col in ['sex', 'smoker', 'region']:
-        encoder = LabelEncoder()
-        if col == 'sex':
-            encoder.fit(['male', 'female'])
-        elif col == 'smoker':
-            encoder.fit(['no', 'yes'])
-        else:  # region
-            encoder.fit(['northeast', 'northwest', 'southeast', 'southwest'])
-        encoders[col] = encoder
-    
-    # Create dummy scaler
-    scaler = StandardScaler()
-    scaler.fit(X_dummy)
-    
-    return {
-        'model': dummy_model,
-        'scaler': scaler,
-        'encoders': encoders,
-        'feature_names': ['age', 'sex', 'bmi', 'children', 'smoker', 'region', 'bmi_smoker', 'age_smoker'],
-        'metrics': {
-            'r2': 0.85,
-            'mae': 3000
-        }
+    model_data = {
+        'model': None,
+        'preprocessor': None, 
+        'feature_names': None,
+        'metadata': None,
+        'model_type': 'local_superior'
     }
-
-def fix_model_structure(model_data):
-    """
-    Fix model structure if some components are missing.
-    """
-    if 'feature_names' not in model_data:
-        model_data['feature_names'] = ['age', 'sex', 'bmi', 'children', 'smoker', 'region', 'bmi_smoker', 'age_smoker']
     
-    if 'metrics' not in model_data:
-        model_data['metrics'] = {'r2': 0.85, 'mae': 3000}
+    base_path = Path(__file__).parent
     
-    if 'encoders' not in model_data:
-        logger.warning("Creating default encoders")
-        from sklearn.preprocessing import LabelEncoder
-        encoders = {}
-        for col in ['sex', 'smoker', 'region']:
-            encoder = LabelEncoder()
-            if col == 'sex':
-                encoder.fit(['male', 'female'])
-            elif col == 'smoker':
-                encoder.fit(['no', 'yes'])
-            else:  # region
-                encoder.fit(['northeast', 'northwest', 'southeast', 'southwest'])
-            encoders[col] = encoder
-        model_data['encoders'] = encoders
+    # 1ª PRIORIDADE: Modelo local superior (13 features)
+    try:
+        model_path = base_path / "gradient_boosting_model.pkl"
+        metadata_path = base_path / "gradient_boosting_model_metadata.json"
+        preprocessor_path = base_path / "models" / "model_artifacts" / "preprocessor.pkl"
+        
+        if all(p.exists() for p in [model_path, metadata_path, preprocessor_path]):
+            # Carregar modelo com joblib
+            model_data['model'] = joblib.load(model_path)
+            
+            # Carregar metadados
+            with open(metadata_path, 'r') as f:
+                model_data['metadata'] = json.load(f)
+            
+            # Carregar preprocessor com joblib
+            preprocessor_data = joblib.load(preprocessor_path)
+            
+            # Recriar o preprocessor como no sistema local
+            try:
+                from insurance_prediction.data.preprocessor import DataPreprocessor
+                model_data['preprocessor'] = DataPreprocessor()
+                
+                # Carregar componentes
+                model_data['preprocessor'].label_encoders = preprocessor_data.get('label_encoders', {})
+                model_data['preprocessor'].feature_selector = preprocessor_data.get('feature_selector')
+                model_data['preprocessor'].selected_features = preprocessor_data.get('selected_features')
+                model_data['preprocessor'].preprocessing_stats = preprocessor_data.get('preprocessing_stats', {})
+            except ImportError:
+                logger.warning("Não foi possível importar DataPreprocessor - usando dados brutos")
+                model_data['preprocessor'] = preprocessor_data
+            
+            # Features do modelo superior (13 features)
+            if model_data['preprocessor'] and hasattr(model_data['preprocessor'], 'selected_features'):
+                model_data['feature_names'] = model_data['preprocessor'].selected_features
+            else:
+                model_data['feature_names'] = [
+                    'age', 'sex', 'bmi', 'children', 'smoker', 'region',
+                    'age_smoker_risk', 'bmi_smoker_risk', 'age_bmi_interaction',
+                    'age_group', 'bmi_category', 'composite_risk_score', 'region_density'
+                ]
+            
+            logger.info(f"✅ Modelo local superior carregado com {len(model_data['feature_names'])} features")
+            logger.info(f"🎯 Tipo: {type(model_data['model']).__name__}")
+            logger.info(f"📊 R²: {model_data['metadata'].get('r2_score', 'N/A')}")
+            return model_data
+            
+    except Exception as e:
+        logger.warning(f"⚠️ Falha ao carregar modelo local superior: {e}")
+    
+    # 2ª PRIORIDADE: Modelo compatível (fallback)
+    try:
+        model_path = base_path / "production_model_compatible.pkl"
+        if model_path.exists():
+            model_data['model'] = joblib.load(model_path)
+            
+            model_data['feature_names'] = ['age', 'sex', 'bmi', 'children', 'smoker', 'region', 'bmi_smoker', 'age_smoker']
+            model_data['model_type'] = 'compatible'
+            
+            logger.info("✅ Modelo compatível carregado como fallback")
+            return model_data
+            
+    except Exception as e:
+        logger.warning(f"⚠️ Falha ao carregar modelo compatível: {e}")
+    
+    # 3ª PRIORIDADE: Modelo otimizado original (último recurso)
+    try:
+        model_path = base_path / "production_model_optimized.pkl"
+        if model_path.exists():
+            model_data['model'] = joblib.load(model_path)
+            
+            model_data['feature_names'] = ['age', 'sex', 'bmi', 'children', 'smoker', 'region', 'bmi_smoker', 'age_smoker']
+            model_data['model_type'] = 'original'
+            
+            logger.info("✅ Modelo original carregado como último recurso")
+            return model_data
+            
+    except Exception as e:
+        logger.error(f"❌ Falha ao carregar modelo original: {e}")
+    
+    # Fallback final: modelo dummy
+    logger.error("❌ Todos os modelos falharam - criando modelo dummy")
+    from sklearn.ensemble import GradientBoostingRegressor
+    model_data['model'] = GradientBoostingRegressor(random_state=42)
+    model_data['feature_names'] = ['age', 'sex', 'bmi', 'children', 'smoker', 'region']
+    model_data['model_type'] = 'dummy'
     
     return model_data
 
-def validate_input(data: Dict[str, Any]) -> Dict[str, Any]:
+def prepare_features_local_model(data, preprocessor=None):
     """
-    Validate user input data.
-    
-    Args:
-        data: Dictionary with input features
-        
-    Returns:
-        Dictionary with validation results
+    Prepara features para o modelo local superior (13 features)
     """
-    errors = []
-    warnings = []
-    
-    # Check required columns
-    missing_cols = set(FEATURE_COLUMNS) - set(data.keys())
-    if missing_cols:
-        errors.append(f"Missing required columns: {missing_cols}")
-    
-    # Validate numerical ranges
-    for col in ["age", "bmi", "children"]:
-        if col in data:
-            value = data[col]
-            range_info = NUMERICAL_RANGES[col]
-            
-            if value < range_info["min"] or value > range_info["max"]:
-                warnings.append(
-                    f"{col} value {value} is outside typical range "
-                    f"({range_info['min']}-{range_info['max']})"
-                )
-    
-    # Validate categorical values
-    for col in ["sex", "smoker", "region"]:
-        if col in data:
-            if data[col] not in CATEGORICAL_VALUES[col]:
-                errors.append(
-                    f"Invalid value for {col}: {data[col]}. "
-                    f"Valid values: {CATEGORICAL_VALUES[col]}"
-                )
-    
-    return {
-        "is_valid": len(errors) == 0,
-        "errors": errors,
-        "warnings": warnings
-    }
-
-def preprocess_data(data: Dict[str, Any], model_data: dict) -> np.ndarray:
-    """
-    Preprocess input data for model prediction using trained encoders and scaler.
-    
-    Args:
-        data: Dictionary with input features
-        model_data: Complete model data with encoders and scaler
-        
-    Returns:
-        Preprocessed numpy array ready for model
-    """
-    # Create DataFrame
-    df = pd.DataFrame([data])
-    
-    # Apply trained encoders
-    encoders = model_data['encoders']
-    df['sex'] = encoders['sex'].transform(df['sex'])
-    df['smoker'] = encoders['smoker'].transform(df['smoker'])
-    df['region'] = encoders['region'].transform(df['region'])
-    
-    # Add interaction features (same as training)
-    df['bmi_smoker'] = df['bmi'] * df['smoker']
-    df['age_smoker'] = df['age'] * df['smoker']
-    
-    # Select features in same order as training
-    feature_names = model_data['feature_names']
-    df_features = df[feature_names]
-    
-    # Apply trained scaler
-    scaler = model_data['scaler']
-    X_scaled = scaler.transform(df_features)
-    
-    return X_scaled
-
-def predict_premium(data: Dict[str, Any], model_data=None) -> Dict[str, Any]:
-    """
-    Predict insurance premium for given input.
-    
-    Args:
-        data: Dictionary with input features
-        model_data: Pre-loaded model data (optional)
-        
-    Returns:
-        Dictionary with prediction results
-    """
-    start_time = pd.Timestamp.now()
-    
     try:
-        # Validate input
-        validation = validate_input(data)
-        if not validation["is_valid"]:
-            return {
-                "success": False,
-                "error": f"Validation failed: {validation['errors']}",
-                "warnings": validation["warnings"]
+        if preprocessor and hasattr(preprocessor, 'transform'):
+            # Usar preprocessor do modelo local
+            input_df = pd.DataFrame([{
+                'age': data['age'],
+                'sex': data['sex'],
+                'bmi': data['bmi'],
+                'children': data['children'],
+                'smoker': data['smoker'],
+                'region': data['region']
+            }])
+            
+            return preprocessor.transform(input_df)
+        else:
+            # Criar features manuais se não tiver preprocessor
+            features = {
+                'age': data['age'],
+                'sex': 1 if data['sex'].lower() == 'male' else 0,
+                'bmi': data['bmi'],
+                'children': data['children'],
+                'smoker': 1 if data['smoker'].lower() == 'yes' else 0,
+                'region': {'southwest': 0, 'southeast': 1, 'northwest': 2, 'northeast': 3}.get(data['region'].lower(), 0),
+                'age_smoker_risk': data['age'] * (1 if data['smoker'].lower() == 'yes' else 0),
+                'bmi_smoker_risk': data['bmi'] * (1 if data['smoker'].lower() == 'yes' else 0),
+                'age_bmi_interaction': data['age'] * data['bmi'],
+                'age_group': 1 if data['age'] >= 50 else 0,
+                'bmi_category': 1 if data['bmi'] >= 30 else 0,
+                'composite_risk_score': (data['age'] * 0.1 + data['bmi'] * 0.2 + (50 if data['smoker'].lower() == 'yes' else 0)),
+                'region_density': {'southwest': 0.3, 'southeast': 0.4, 'northwest': 0.2, 'northeast': 0.5}.get(data['region'].lower(), 0.3)
             }
+            
+            return np.array([[features[name] for name in [
+                'age', 'sex', 'bmi', 'children', 'smoker', 'region',
+                'age_smoker_risk', 'bmi_smoker_risk', 'age_bmi_interaction',
+                'age_group', 'bmi_category', 'composite_risk_score', 'region_density'
+            ]]])
+            
+    except Exception as e:
+        logger.error(f"❌ Erro na preparação de features: {e}")
+        raise
+
+def prepare_features_simple_model(data):
+    """
+    Prepara features para os modelos simples (8 features) - fallback
+    """
+    try:
+        # Encoding manual para modelos simples
+        sex_encoded = 1 if data['sex'].lower() == 'male' else 0
+        smoker_encoded = 1 if data['smoker'].lower() == 'yes' else 0
+        region_map = {'southwest': 0, 'southeast': 1, 'northwest': 2, 'northeast': 3}
+        region_encoded = region_map.get(data['region'].lower(), 0)
         
-        # Load model if not provided
-        if model_data is None:
-            model_data = load_model()
-            if model_data is None:
-                return {
-                    "success": False,
-                    "error": "Could not load model"
-                }
+        # Features do modelo simples
+        features = [
+            data['age'],
+            sex_encoded,
+            data['bmi'],
+            data['children'],
+            smoker_encoded,
+            region_encoded,
+            data['bmi'] * smoker_encoded,  # bmi_smoker
+            data['age'] * smoker_encoded   # age_smoker
+        ]
         
-        # Preprocess data
-        X = preprocess_data(data, model_data)
-        
-        # Make prediction using the trained model
-        model = model_data['model']
-        prediction = model.predict(X)[0]
-        
-        # Calculate processing time
-        processing_time = (pd.Timestamp.now() - start_time).total_seconds() * 1000
-        
-        # Get model performance metrics
-        metrics = model_data.get('metrics', {})
-        
-        # Format result
-        result = {
-            "success": True,
-            "predicted_premium": round(float(prediction), 2),
-            "monthly_premium": round(float(prediction) / 12, 2),
-            "input_data": data,
-            "processing_time_ms": round(processing_time, 2),
-            "model_info": {
-                "algorithm": "Gradient Boosting",
-                "version": "1.0.0",
-                "performance": f"R² = {metrics.get('r2', 0.88):.3f}",
-                "mae": f"${metrics.get('mae', 2650):.0f}"
-            },
-            "warnings": validation["warnings"]
-        }
-        
-        return result
+        return np.array([features])
         
     except Exception as e:
-        logger.error(f"Prediction error: {e}")
+        logger.error(f"❌ Erro na preparação de features simples: {e}")
+        raise
+
+def predict_premium(input_data, model_data):
+    """
+    Faz predição usando o modelo carregado
+    """
+    try:
+        model = model_data['model']
+        model_type = model_data.get('model_type', 'unknown')
+        
+        # Preparar features baseado no tipo de modelo
+        if model_type == 'local_superior':
+            # Usar preprocessor para modelo superior
+            features = prepare_features_local_model(input_data, model_data.get('preprocessor'))
+        else:
+            # Modelos simples (compatível, original, dummy)
+            features = prepare_features_simple_model(input_data)
+        
+        # Fazer predição
+        prediction = model.predict(features)[0]
+        
+        # Garantir que a predição seja positiva
+        prediction = max(0, prediction)
+        
+        logger.info(f"✅ Predição realizada: ${prediction:.2f} (modelo: {model_type})")
+        
         return {
-            "success": False,
-            "error": f"Prediction failed: {str(e)}"
+            'success': True,
+            'predicted_premium': prediction,
+            'model_type': model_type,
+            'features_used': len(model_data.get('feature_names', [])),
+            'input_data': input_data
         }
+        
+    except Exception as e:
+        logger.error(f"❌ Erro na predição: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'predicted_premium': 0.0,
+            'model_type': model_data.get('model_type', 'unknown')
+        }
+
+def validate_input(data):
+    """
+    Valida os dados de entrada
+    """
+    required_fields = ['age', 'sex', 'bmi', 'children', 'smoker', 'region']
+    
+    for field in required_fields:
+        if field not in data:
+            return False, f"Campo obrigatório '{field}' não encontrado"
+    
+    # Validações específicas
+    if not (18 <= data['age'] <= 120):
+        return False, "Idade deve estar entre 18 e 120 anos"
+    
+    if not (10 <= data['bmi'] <= 60):
+        return False, "BMI deve estar entre 10 e 60"
+    
+    if not (0 <= data['children'] <= 10):
+        return False, "Número de filhos deve estar entre 0 e 10"
+    
+    if data['sex'].lower() not in ['male', 'female']:
+        return False, "Sexo deve ser 'male' ou 'female'"
+    
+    if data['smoker'].lower() not in ['yes', 'no']:
+        return False, "Fumante deve ser 'yes' ou 'no'"
+    
+    if data['region'].lower() not in ['southwest', 'southeast', 'northwest', 'northeast']:
+        return False, "Região deve ser uma das: southwest, southeast, northwest, northeast"
+    
+    return True, "Dados válidos"
 
 def get_risk_analysis(data: Dict[str, Any], premium: float) -> Dict[str, Any]:
     """
@@ -400,21 +387,31 @@ def get_recommendations(data: Dict[str, Any]) -> list:
     return recommendations
 
 if __name__ == "__main__":
-    # Test the utilities
-    test_data = {
-        'age': 35,
-        'sex': 'male',
-        'bmi': 27.5,
-        'children': 2,
-        'smoker': 'no',
-        'region': 'northeast'
-    }
+    # Teste básico
+    logger.info("🧪 Testando carregamento do modelo...")
     
-    print("🧪 Testing model utilities...")
-    result = predict_premium(test_data)
+    model_data = load_model()
     
-    if result["success"]:
-        print(f"✅ Prediction successful: ${result['predicted_premium']:,.2f}")
-        print(f"⚡ Processing time: {result['processing_time_ms']:.2f}ms")
+    if model_data['model'] is not None:
+        logger.info(f"✅ Modelo carregado com sucesso!")
+        logger.info(f"🎯 Tipo: {model_data['model_type']}")
+        logger.info(f"📊 Features: {len(model_data.get('feature_names', []))}")
+        
+        # Teste de predição
+        test_data = {
+            'age': 30,
+            'sex': 'male',
+            'bmi': 25.0,
+            'children': 1,
+            'smoker': 'no',
+            'region': 'southwest'
+        }
+        
+        result = predict_premium(test_data, model_data)
+        
+        if result['success']:
+            logger.info(f"✅ Teste de predição bem-sucedido: ${result['predicted_premium']:.2f}")
+        else:
+            logger.error(f"❌ Teste de predição falhou: {result['error']}")
     else:
-        print(f"❌ Prediction failed: {result['error']}") 
+        logger.error("❌ Falha no carregamento do modelo!") 
