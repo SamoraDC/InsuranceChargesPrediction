@@ -9,7 +9,7 @@
 [![Scikit-learn](https://img.shields.io/badge/Scikit--learn-1.5%2B-orange?style=for-the-badge&logo=scikit-learn)](https://scikit-learn.org)
 
 **Machine Learning system for health insurance premium prediction**  
-**Sistema de Machine Learning para predição de prêmios de convênio médico**
+**Sistema de Machine Learning para predição de preço de convênio médico**
 
 </div>
 
