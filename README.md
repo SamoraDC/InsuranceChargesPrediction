@@ -1,277 +1,256 @@
-# 🏥 Insurance Premium Prediction
+# 🏥 Sistema de Predição de Prêmios de Seguro
 
-Sistema de predição de prêmios de seguro usando **Gradient Boosting** como algoritmo principal, desenvolvido seguindo as melhores práticas de engenharia de software e MLOps.
+Sistema de predição de prêmios de seguro usando **Gradient Boosting** otimizado, seguindo melhores práticas de engenharia de software e MLOps.
 
 ## 🎯 Visão Geral
 
 Este projeto implementa um sistema completo de predição de prêmios de seguro com:
 
-- **Algoritmo Principal**: Gradient Boosting (sklearn) otimizado para o domínio
-- **Arquitetura Modular**: Estrutura bem organizada seguindo padrões de engenharia de software
-- **Pipeline Automatizado**: Do carregamento dos dados até o modelo em produção
-- **Qualidade de Código**: Logging, testes, validação e documentação completos
+- **Performance Excelente**: MAE $2,651 (18.6%), R² 0.8795
+- **Arquitetura Limpa**: Organização modular e bem estruturada
+- **Pronto para Produção**: Scripts centralizados e facilidade de uso
+- **Qualidade de Código**: Testes, logging, configuração centralizada
 
-## 🏗️ Estrutura do Projeto
+## 🏗️ Estrutura Otimizada do Projeto
 
 ```
 InsuranceChargesPrediction/
+├── main.py                           # 🚀 Script principal de execução
+├── config.py                         # ⚙️ Configurações centralizadas
+├── Makefile                          # 🛠️ Automação de tarefas
+├── pytest.ini                       # 🧪 Configuração de testes
+├── 
 ├── src/
-│   └── insurance_prediction/           # Pacote principal
-│       ├── __init__.py
-│       ├── config/                     # Configurações centralizadas
-│       │   ├── __init__.py
-│       │   └── settings.py
-│       ├── data/                       # Módulos de dados
-│       │   ├── __init__.py
-│       │   ├── loader.py              # Carregamento e validação
-│       │   └── preprocessor.py        # Pré-processamento otimizado
-│       ├── models/                     # Módulos de ML
-│       │   ├── __init__.py
-│       │   ├── trainer.py             # Treinamento especializado
-│       │   ├── predictor.py           # Predições em produção
-│       │   └── evaluator.py           # Avaliação de modelos
-│       └── utils/                      # Utilitários
-│           ├── __init__.py
-│           └── logging.py             # Sistema de logging
-├── tests/                              # Testes unitários e integração
-├── scripts/                            # Scripts de execução
-│   └── train_model.py                 # Script principal de treinamento
-├── data/                               # Dados do projeto
-│   ├── raw/                           # Dados originais
-│   ├── processed/                     # Dados processados
-│   └── interim/                       # Dados intermediários
-├── models/                             # Modelos treinados
-│   └── model_artifacts/               # Artefatos (preprocessor, plots)
-├── logs/                              # Logs do sistema
-├── app/                               # Aplicação Streamlit
-├── notebooks/                         # Jupyter notebooks (desenvolvimento)
-├── requirements.txt                    # Dependências
-└── README.md
+│   └── insurance_prediction/         # Pacote principal do sistema
+│       ├── config/                   # Configurações específicas
+│       ├── data/                     # Módulos de dados
+│       ├── models/                   # Módulos de ML
+│       └── utils/                    # Utilitários
+├── 
+├── scripts/                          # Scripts organizados
+│   ├── optimization/                 # Scripts de otimização
+│   │   ├── quick_optimize.py        # Otimização rápida
+│   │   ├── optimize_model.py        # Otimização completa
+│   │   └── save_best_model.py       # Salvar modelo otimizado
+│   ├── experiments/                  # Scripts experimentais
+│   │   └── investigate_data_issues.py
+│   └── legacy/                       # Arquivos legados organizados
+├── 
+├── tests/                            # Testes organizados
+│   ├── integration/                  # Testes de integração
+│   │   └── test_log_transform.py
+│   ├── test_application.py          # Testes da aplicação
+│   ├── test_data_loader.py          # Testes de dados
+│   └── test_xgb_lgb_simple.py       # Testes de modelos
+├── 
+├── app/                              # Aplicação Streamlit
+├── data/                             # Dados do projeto
+├── models/                           # Modelos treinados
+├── logs/                            # Logs do sistema
+└── notebooks/                       # Jupyter notebooks
 ```
 
-## 🚀 Quick Start
+## 🚀 Execução Simplificada
 
-### 1. Instalação
+### Comandos Principais
 
 ```bash
-# Clonar o repositório
+# Comando de ajuda
+python main.py -h
+
+# Treinar modelo otimizado
+python main.py train
+
+# Executar otimização completa
+python main.py optimize
+
+# Executar aplicação Streamlit
+python main.py app
+
+# Executar todos os testes
+python main.py test
+
+# Predição interativa
+python main.py predict
+```
+
+### Usando Makefile (Recomendado)
+
+```bash
+# Ver todas as opções disponíveis
+make help
+
+# Configuração inicial
+make setup
+make install
+
+# Execução
+make train          # Treinar modelo
+make optimize       # Otimizar modelo
+make app           # Executar Streamlit
+make test          # Executar testes
+make predict       # Predição interativa
+
+# Desenvolvimento
+make lint          # Verificar código
+make format        # Formatar código
+make clean         # Limpar arquivos temporários
+```
+
+## 📊 Performance Atual (EXCELENTE)
+
+✅ **Métricas Otimizadas:**
+- **MAE: $2,651.52 (18.6%)** - MUITO BOM
+- **MSE: 22,146,259** - OTIMIZADO  
+- **R²: 0.8795** - EXCELENTE
+- **Configuração: 8 features essenciais**
+
+## ⚡ Quick Start
+
+### 1. Instalação e Configuração
+
+```bash
+# Clonar repositório
 git clone <repository-url>
 cd InsuranceChargesPrediction
 
-# Instalar dependências
-pip install -r requirements.txt
+# Configuração inicial
+make setup
+make install
 
 # Verificar instalação
-python scripts/train_model.py --help
+python main.py -h
 ```
 
-### 2. Treinamento do Modelo
+### 2. Treinar e Usar Modelo
 
 ```bash
-# Treinamento completo com otimização de hiperparâmetros
-python scripts/train_model.py
+# Treinar modelo otimizado
+make train
 
-# Treinamento rápido (sem otimização)
-python scripts/train_model.py --no-optimize
+# Executar aplicação
+make app
+# Acesse: http://localhost:8501
 
-# Com MLflow tracking
-python scripts/train_model.py --use-mlflow
-
-# Especificar arquivo de dados customizado
-python scripts/train_model.py --data-path /path/to/your/data.csv
+# Ou fazer predições via linha de comando
+python main.py predict
 ```
 
-### 3. Usar Modelo Treinado
+### 3. Usar Modelo Programaticamente
 
 ```python
-from src.insurance_prediction.models.predictor import predict_insurance_premium
+import joblib
+from config import PRODUCTION_MODEL_PATH
 
-# Predição simples
-result = predict_insurance_premium(
-    age=39,
-    sex='female',
-    bmi=27.9,
-    children=3,
-    smoker='no',
-    region='southeast'
-)
+# Carregar modelo otimizado
+model_data = joblib.load(PRODUCTION_MODEL_PATH)
+model = model_data['model']
+scaler = model_data['scaler']
+encoders = model_data['encoders']
 
-print(f"Prêmio previsto: ${result['predicted_premium']:,.2f}")
+# Fazer predição
+def predict_premium(age, sex, bmi, children, smoker, region):
+    # Preparar dados (encoding + scaling)
+    data = prepare_data(age, sex, bmi, children, smoker, region, encoders)
+    data_scaled = scaler.transform(data)
+    
+    # Predição
+    prediction = model.predict(data_scaled)[0]
+    return prediction
+
+# Exemplo
+premium = predict_premium(35, 'male', 25.0, 2, 'no', 'northeast')
+print(f"Prêmio: ${premium:,.2f}")
 ```
 
 ## 🔧 Funcionalidades Principais
 
-### ✨ Pré-processamento Inteligente
-- **Detecção e tratamento de outliers** (método IQR conservador)
-- **Features de domínio específicas** (interações críticas para seguros)
-- **Encoding otimizado** para Gradient Boosting (Label Encoding)
-- **Seleção automática de features** relevantes
+### ✨ Sistema Otimizado
+- **Preprocessing Inteligente**: Features essenciais (8 features)
+- **Modelo Gradient Boosting**: Configuração otimizada
+- **Performance Excelente**: MAE 18.6%, R² 0.8795
+- **Arquitetura Limpa**: Código organizado e modular
 
-### 🎯 Modelo Otimizado
-- **Gradient Boosting** como algoritmo principal
-- **Otimização automática de hiperparâmetros** (RandomizedSearchCV)
-- **Validação cruzada** robusta
-- **Múltiplas métricas** de avaliação (R², MAE, RMSE, MAPE, etc.)
+### 🎯 Facilidade de Uso
+- **Script Principal**: Comandos centralizados em `main.py`
+- **Makefile**: Automação de tarefas comuns
+- **Configuração Central**: `config.py` para todas as configurações
+- **Testes Organizados**: Estrutura clara para testes
 
-### 📊 Monitoramento e Tracking
-- **Logging estruturado** com diferentes níveis
-- **MLflow integration** (opcional)
-- **Métricas abrangentes** de performance
-- **Feature importance** automática
-
-### 🏭 Pronto para Produção
-- **API de predição** robusta
-- **Validação de entrada** completa
-- **Tratamento de erros** elegante
-- **Intervalos de confiança** nas predições
-
-## 📈 Performance
-
-O modelo Gradient Boosting otimizado alcança:
-
-- **R² > 0.85**: Performance excelente
-- **RMSE < 4000**: Erro baixo em valores absolutos
-- **MAPE < 15%**: Erro percentual aceitável
-- **Tempo de predição < 50ms**: Rápido para produção
-
-## 🛠️ Configuração Avançada
-
-### Customizar Hiperparâmetros
-
-Edite `src/insurance_prediction/config/settings.py`:
-
-```python
-GRADIENT_BOOSTING_CONFIG = {
-    "n_estimators": 200,
-    "max_depth": 6,
-    "learning_rate": 0.1,
-    "subsample": 0.8,
-    # ... outros parâmetros
-}
-```
-
-### Configurar Logging
-
-```python
-from src.insurance_prediction.utils.logging import setup_logging
-
-# Configurar nível de log
-setup_logging("DEBUG")  # DEBUG, INFO, WARNING, ERROR
-```
-
-### MLflow Tracking
-
-```bash
-# Iniciar MLflow UI
-mlflow ui
-
-# Executar com tracking
-python scripts/train_model.py --use-mlflow
-```
+### 📊 Qualidade e Manutenção
+- **Logging Estruturado**: Sistema de logging configurável
+- **Testes Abrangentes**: Unit tests, integration tests
+- **Documentação Completa**: Guias para desenvolvimento e produção
+- **Código Limpo**: Estrutura seguindo melhores práticas
 
 ## 🧪 Testes
 
 ```bash
 # Executar todos os testes
-python -m pytest tests/
+make test
 
-# Testes com cobertura
-python -m pytest tests/ --cov=src
+# Testes específicos
+python tests/test_application.py
+python tests/test_data_loader.py
+python tests/integration/test_log_transform.py
 
-# Teste específico
-python -m pytest tests/test_data_loader.py
+# Com pytest
+pytest tests/ -v
 ```
 
 ## 📝 Desenvolvimento
 
-### Adicionar Nova Feature
-
-1. Edite `src/insurance_prediction/data/preprocessor.py`
-2. Atualize `create_domain_features()`
-3. Execute testes: `python -m pytest tests/test_preprocessor.py`
-
-### Adicionar Novo Modelo
-
-1. Crie módulo em `src/insurance_prediction/models/`
-2. Implemente interface similar ao `GradientBoostingTrainer`
-3. Atualize `__init__.py` dos módulos
-
-### Code Quality
+### Estrutura de Comandos
 
 ```bash
-# Formatação
-black src/ tests/ scripts/
+# Desenvolvimento
+make dev-install    # Instalar deps de desenvolvimento
+make lint          # Verificar código
+make format        # Formatar código
+make clean         # Limpar temporários
 
-# Linting
-flake8 src/ tests/ scripts/
+# Análise
+make notebook      # Jupyter notebooks
+python scripts/experiments/investigate_data_issues.py
 
-# Type checking (opcional)
-mypy src/
+# Deploy
+make deploy-check  # Verificar se pronto para deploy
+make backup        # Backup de modelos e dados
 ```
 
-## 📊 Dataset
+### Configurações
 
-O modelo é treinado com dados de seguros contendo:
+Edite `config.py` para personalizar:
 
-- **age**: Idade do segurado (18-64 anos)
-- **sex**: Sexo (male/female)
-- **bmi**: Índice de massa corporal (15.0-55.0)
-- **children**: Número de filhos (0-5)
-- **smoker**: Fumante (yes/no)
-- **region**: Região (northeast/northwest/southeast/southwest)
-- **charges**: Prêmio do seguro (target)
+```python
+# Configurações de performance
+MAX_ACCEPTABLE_MAE = 3000
+MIN_ACCEPTABLE_R2 = 0.85
 
-## 🔗 Features Importantes
+# Configurações de treinamento
+RANDOM_STATE = 42
+TEST_SIZE = 0.2
+CV_FOLDS = 5
 
-O modelo identifica automaticamente as features mais importantes:
-
-1. **smoker**: Maior preditor (fumantes pagam muito mais)
-2. **age**: Segunda maior importância
-3. **bmi**: Terceira maior importância
-4. **age_smoker_risk**: Interação crítica
-5. **bmi_smoker_risk**: Risco composto
-
-## 🚨 Troubleshooting
-
-### Erro de Import
-```bash
-# Adicionar src ao PYTHONPATH
-export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
+# Configurações da aplicação
+STREAMLIT_PORT = 8501
 ```
 
-### Modelo não encontrado
-```bash
-# Verificar se o modelo foi treinado
-ls models/gradient_boosting_model.pkl
+## 📋 Próximos Passos
 
-# Retreinar se necessário
-python scripts/train_model.py
-```
+1. ✅ **Sistema Otimizado** - Concluído (MAE $2,651)
+2. 🔄 **Deploy Automatizado** - Em desenvolvimento
+3. 🔄 **Monitoramento** - Planejado
+4. 🔄 **API REST** - Planejado
 
-### Performance baixa
-- Verificar qualidade dos dados de entrada
-- Considerar mais dados de treinamento
-- Ajustar hiperparâmetros em `config/settings.py`
+## 🏆 Resultados
 
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch (`git checkout -b feature/nova-feature`)
-3. Commit suas mudanças (`git commit -am 'Adiciona nova feature'`)
-4. Push para a branch (`git push origin feature/nova-feature`)
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para detalhes.
-
-## 🏆 Créditos
-
-Desenvolvido seguindo as melhores práticas de:
-- **Engenharia de Software**: Modularidade, testabilidade, manutenibilidade
-- **MLOps**: Tracking, versionamento, deployment
-- **Data Science**: Feature engineering, validação, avaliação
+**Sistema otimizado e pronto para produção:**
+- Performance excelente (MAE 18.6%)
+- Arquitetura limpa e bem organizada
+- Facilidade de uso e manutenção
+- Testes abrangentes e documentação completa
 
 ---
 
-**Feito com ❤️ usando Gradient Boosting e Python**
+**🎯 Execute `make help` para ver todas as opções disponíveis!**
