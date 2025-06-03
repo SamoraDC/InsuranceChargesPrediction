@@ -1,0 +1,27 @@
+{
+  "model_type": "GradientBoostingRegressor",
+  "algorithm": "Gradient Boosting",
+  "version": "2.0.0-cloud-compatible",
+  "features": [
+    "age",
+    "sex",
+    "bmi",
+    "children",
+    "smoker",
+    "region",
+    "age_smoker_risk",
+    "bmi_smoker_risk",
+    "age_bmi_interaction",
+    "age_group",
+    "bmi_category",
+    "composite_risk_score",
+    "region_density"
+  ],
+  "n_features": 13,
+  "r2_score": 0.845048448633072,
+  "mae": 2826.748069022649,
+  "rmse": 4904.694872507151,
+  "training_samples": 1070,
+  "test_samples": 268,
+  "created_for": "streamlit_cloud_deploy"
+}

@@ -14,6 +14,8 @@ import pickle
 import json
 import os
 import sys
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.preprocessing import LabelEncoder
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -66,7 +68,109 @@ def load_model():
     
     base_path = Path(__file__).parent
     
-    # 1ª PRIORIDADE: Modelo local superior (13 features)
+    # 1ª PRIORIDADE: Modelo ROBUSTO (treinado com dados reais, compatível com sklearn 1.5.x)
+    try:
+        model_path = base_path / "robust_model.pkl"
+        metadata_path = base_path / "robust_model_metadata.json"
+        encoders_path = base_path / "robust_encoders.pkl"
+        
+        if all(p.exists() for p in [model_path, metadata_path, encoders_path]):
+            # Carregar modelo robusto
+            model_data['model'] = joblib.load(model_path)
+            
+            # Carregar metadados
+            with open(metadata_path, 'r') as f:
+                model_data['metadata'] = json.load(f)
+            
+            # Carregar encoders
+            model_data['encoders'] = joblib.load(encoders_path)
+            
+            # Features do modelo robusto (8 features)
+            model_data['feature_names'] = model_data['metadata']['features']
+            model_data['model_type'] = 'robust_deploy'
+            
+            logger.info(f"🎯 Modelo ROBUSTO carregado com {len(model_data['feature_names'])} features")
+            logger.info(f"✅ Tipo: {type(model_data['model']).__name__}")
+            logger.info(f"📊 R²: {model_data['metadata'].get('r2_score', 'N/A'):.4f}")
+            logger.info(f"💰 MAE: ${model_data['metadata'].get('mae', 'N/A'):.2f}")
+            logger.info(f"🧪 Teste: ${model_data['metadata']['test_prediction']['prediction']:.2f}")
+            return model_data
+        
+    except Exception as e:
+        logger.warning(f"⚠️ Falha ao carregar modelo robusto: {e}")
+
+    # 2ª PRIORIDADE: Modelo EXATO (réplica 100% idêntica do local)
+    try:
+        model_path = base_path / "gradient_boosting_model_exact.pkl"
+        metadata_path = base_path / "gradient_boosting_model_exact_metadata.json"
+        preprocessor_path = base_path / "models" / "model_artifacts" / "preprocessor_exact.pkl"
+        
+        if all(p.exists() for p in [model_path, metadata_path, preprocessor_path]):
+            # Carregar modelo EXATO
+            model_data['model'] = joblib.load(model_path)
+            
+            # Carregar metadados
+            with open(metadata_path, 'r') as f:
+                model_data['metadata'] = json.load(f)
+            
+            # Carregar preprocessor (dados serializáveis)
+            preprocessor_data = joblib.load(preprocessor_path)
+            model_data['preprocessor'] = preprocessor_data
+            
+            # Features do modelo exato (13 features - exato do local)
+            model_data['feature_names'] = preprocessor_data.get('selected_features', [
+                'age', 'sex', 'bmi', 'children', 'smoker', 'region',
+                'age_smoker_risk', 'bmi_smoker_risk', 'age_bmi_interaction',
+                'age_group', 'bmi_category', 'composite_risk_score', 'region_density'
+            ])
+            
+            model_data['model_type'] = 'exact_replica'
+            
+            logger.info(f"🎯 Modelo EXATO carregado com {len(model_data['feature_names'])} features")
+            logger.info(f"✅ Tipo: {type(model_data['model']).__name__}")
+            logger.info(f"📊 R²: {model_data['metadata'].get('r2_score', 'N/A')}")
+            logger.info(f"🔍 Validação: Diferença ${model_data['metadata']['validation_test']['difference']:.2f}")
+            return model_data
+        
+    except Exception as e:
+        logger.warning(f"⚠️ Falha ao carregar modelo exato: {e}")
+
+    # 3ª PRIORIDADE: Modelo cloud compatível (13 features - SEM random state issues)
+    try:
+        model_path = base_path / "gradient_boosting_model_cloud.pkl"
+        metadata_path = base_path / "gradient_boosting_model_cloud_metadata.json"
+        preprocessor_path = base_path / "models" / "model_artifacts" / "preprocessor_cloud.pkl"
+        
+        if all(p.exists() for p in [model_path, metadata_path, preprocessor_path]):
+            # Carregar modelo com joblib
+            model_data['model'] = joblib.load(model_path)
+            
+            # Carregar metadados
+            with open(metadata_path, 'r') as f:
+                model_data['metadata'] = json.load(f)
+            
+            # Carregar preprocessor (dados simples, não classe)
+            preprocessor_data = joblib.load(preprocessor_path)
+            model_data['preprocessor'] = preprocessor_data
+            
+            # Features do modelo cloud (13 features)
+            model_data['feature_names'] = preprocessor_data.get('selected_features', [
+                'age', 'sex', 'bmi', 'children', 'smoker', 'region',
+                'age_smoker_risk', 'bmi_smoker_risk', 'age_bmi_interaction',
+                'age_group', 'bmi_category', 'composite_risk_score', 'region_density'
+            ])
+            
+            model_data['model_type'] = 'cloud_compatible'
+            
+            logger.info(f"✅ Modelo cloud compatível carregado com {len(model_data['feature_names'])} features")
+            logger.info(f"🎯 Tipo: {type(model_data['model']).__name__}")
+            logger.info(f"📊 R²: {model_data['metadata'].get('r2_score', 'N/A')}")
+            return model_data
+        
+    except Exception as e:
+        logger.warning(f"⚠️ Falha ao carregar modelo cloud compatível: {e}")
+
+    # 4ª PRIORIDADE: Modelo local superior (13 features)
     try:
         model_path = base_path / "gradient_boosting_model.pkl"
         metadata_path = base_path / "gradient_boosting_model_metadata.json"
@@ -110,12 +214,12 @@ def load_model():
             logger.info(f"✅ Modelo local superior carregado com {len(model_data['feature_names'])} features")
             logger.info(f"🎯 Tipo: {type(model_data['model']).__name__}")
             logger.info(f"📊 R²: {model_data['metadata'].get('r2_score', 'N/A')}")
-            return model_data
-            
+        return model_data
+        
     except Exception as e:
         logger.warning(f"⚠️ Falha ao carregar modelo local superior: {e}")
     
-    # 2ª PRIORIDADE: Modelo compatível (fallback)
+    # 5ª PRIORIDADE: Modelo compatível (fallback)
     try:
         model_path = base_path / "production_model_compatible.pkl"
         if model_path.exists():
@@ -130,7 +234,7 @@ def load_model():
     except Exception as e:
         logger.warning(f"⚠️ Falha ao carregar modelo compatível: {e}")
     
-    # 3ª PRIORIDADE: Modelo otimizado original (último recurso)
+    # 6ª PRIORIDADE: Modelo otimizado original (último recurso)
     try:
         model_path = base_path / "production_model_optimized.pkl"
         if model_path.exists():
@@ -145,14 +249,100 @@ def load_model():
     except Exception as e:
         logger.error(f"❌ Falha ao carregar modelo original: {e}")
     
-    # Fallback final: modelo dummy
-    logger.error("❌ Todos os modelos falharam - criando modelo dummy")
-    from sklearn.ensemble import GradientBoostingRegressor
-    model_data['model'] = GradientBoostingRegressor(random_state=42)
-    model_data['feature_names'] = ['age', 'sex', 'bmi', 'children', 'smoker', 'region']
-    model_data['model_type'] = 'dummy'
+    # Fallback final: modelo dummy TREINADO
+    logger.error("❌ Todos os modelos falharam - criando modelo dummy treinado")
     
-    return model_data
+    try:
+        # Carregar dados reais para treinar o modelo dummy
+        import pandas as pd
+        from sklearn.ensemble import GradientBoostingRegressor
+        from sklearn.preprocessing import LabelEncoder
+        
+        # Tentar carregar dados do CSV
+        data_path = Path(__file__).parent.parent / "data" / "insurance.csv"
+        if not data_path.exists():
+            # Se não encontrar, criar dados sintéticos mínimos
+            logger.warning("⚠️ Dados reais não encontrados, criando dados sintéticos")
+            dummy_data = pd.DataFrame({
+                'age': [25, 35, 45, 55],
+                'sex': ['male', 'female', 'male', 'female'],
+                'bmi': [22, 28, 32, 25],
+                'children': [0, 1, 2, 0],
+                'smoker': ['no', 'no', 'yes', 'no'],
+                'region': ['southwest', 'northeast', 'southeast', 'northwest'],
+                'charges': [2000, 5000, 15000, 3000]
+            })
+            df = dummy_data
+        else:
+            # Carregar dados reais
+            df = pd.read_csv(data_path)
+            logger.info(f"✅ Dados reais carregados: {len(df)} registros")
+        
+        # Preparar features
+        X = df[['age', 'bmi', 'children']].copy()
+        
+        # Encoding manual simples
+        le_sex = LabelEncoder()
+        X['sex'] = le_sex.fit_transform(df['sex'])
+        
+        le_smoker = LabelEncoder()
+        X['smoker'] = le_smoker.fit_transform(df['smoker'])
+        
+        le_region = LabelEncoder()
+        X['region'] = le_region.fit_transform(df['region'])
+        
+        # Features derivadas simples
+        X['bmi_smoker'] = X['bmi'] * X['smoker']
+        X['age_smoker'] = X['age'] * X['smoker']
+        
+        y = df['charges']
+        
+        # Treinar modelo dummy
+        dummy_model = GradientBoostingRegressor(
+            n_estimators=50,
+            max_depth=3,
+            random_state=42,
+            learning_rate=0.1
+        )
+        dummy_model.fit(X, y)
+        
+        # Salvar encoders para uso na predição
+        encoders = {
+            'sex': le_sex,
+            'smoker': le_smoker,
+            'region': le_region
+        }
+        
+        model_data['model'] = dummy_model
+        model_data['encoders'] = encoders
+        model_data['feature_names'] = ['age', 'sex', 'bmi', 'children', 'smoker', 'region', 'bmi_smoker', 'age_smoker']
+        model_data['model_type'] = 'dummy_trained'
+        
+        logger.info(f"✅ Modelo dummy treinado com {len(df)} amostras")
+        logger.info(f"🎯 R² score: {dummy_model.score(X, y):.4f}")
+        
+        return model_data
+        
+    except Exception as e:
+        logger.error(f"❌ Falha ao criar modelo dummy treinado: {e}")
+        
+        # Último recurso: modelo extremamente simples
+        from sklearn.linear_model import LinearRegression
+        import numpy as np
+        
+        # Dados sintéticos mínimos hardcoded
+        X_simple = np.array([[25, 0, 22, 0, 0, 0], [45, 1, 30, 2, 1, 1]])
+        y_simple = np.array([2000, 15000])
+        
+        simple_model = LinearRegression()
+        simple_model.fit(X_simple, y_simple)
+        
+        model_data['model'] = simple_model
+        model_data['feature_names'] = ['age', 'sex', 'bmi', 'children', 'smoker', 'region']
+        model_data['model_type'] = 'emergency_fallback'
+        
+        logger.info("✅ Modelo de emergência criado")
+        return model_data
 
 def prepare_features_local_model(data, preprocessor=None):
     """
@@ -171,6 +361,9 @@ def prepare_features_local_model(data, preprocessor=None):
             }])
             
             return preprocessor.transform(input_df)
+        elif preprocessor and 'label_encoders' in preprocessor:
+            # Modelo cloud compatível - preprocessor é dict simples
+            return prepare_features_cloud_model(data, preprocessor)
         else:
             # Criar features manuais se não tiver preprocessor
             features = {
@@ -197,6 +390,48 @@ def prepare_features_local_model(data, preprocessor=None):
             
     except Exception as e:
         logger.error(f"❌ Erro na preparação de features: {e}")
+        raise
+
+def prepare_features_cloud_model(data, preprocessor_data):
+    """
+    Prepara features para o modelo cloud compatível (13 features)
+    """
+    try:
+        # Encode categóricas usando os encoders do preprocessor
+        label_encoders = preprocessor_data.get('label_encoders', {})
+        
+        sex_encoded = label_encoders.get('sex', {}).get(data['sex'].lower(), 0)
+        smoker_encoded = label_encoders.get('smoker', {}).get(data['smoker'].lower(), 0)
+        region_encoded = label_encoders.get('region', {}).get(data['region'].lower(), 0)
+        
+        # Features básicas
+        age = data['age']
+        bmi = data['bmi']
+        children = data['children']
+        
+        # Features avançadas (EXATAS do modelo cloud)
+        age_smoker_risk = age * smoker_encoded
+        bmi_smoker_risk = bmi * smoker_encoded
+        age_bmi_interaction = age * bmi
+        age_group = 1 if age >= 50 else 0
+        bmi_category = 1 if bmi >= 30 else 0
+        composite_risk_score = age * 0.1 + bmi * 0.2 + smoker_encoded * 50
+        
+        # Region density (EXATO do modelo cloud)
+        region_density_map = {0: 0.3, 1: 0.4, 2: 0.2, 3: 0.5}  # sw, se, nw, ne
+        region_density = region_density_map.get(region_encoded, 0.3)
+        
+        # Ordem das features (EXATA do modelo cloud)
+        features = [
+            age, sex_encoded, bmi, children, smoker_encoded, region_encoded,
+            age_smoker_risk, bmi_smoker_risk, age_bmi_interaction,
+            age_group, bmi_category, composite_risk_score, region_density
+        ]
+        
+        return np.array([features])
+        
+    except Exception as e:
+        logger.error(f"❌ Erro na preparação de features cloud: {e}")
         raise
 
 def prepare_features_simple_model(data):
@@ -228,6 +463,128 @@ def prepare_features_simple_model(data):
         logger.error(f"❌ Erro na preparação de features simples: {e}")
         raise
 
+def prepare_features_exact_model(data, preprocessor_data):
+    """
+    Prepara features usando o preprocessor exato (estrutura de dicionário)
+    """
+    try:
+        if preprocessor_data is None:
+            logger.warning("⚠️ Preprocessor exato não disponível, usando fallback simples")
+            return prepare_features_simple_model(data)
+        
+        # Aplicar as mesmas transformações do local
+        processed_data = data.copy()
+        
+        # Features básicas
+        age = float(processed_data['age'])
+        sex = processed_data['sex'].lower()
+        bmi = float(processed_data['bmi'])
+        children = int(processed_data['children'])
+        smoker = processed_data['smoker'].lower()
+        region = processed_data['region'].lower()
+        
+        # Encodings usando os label encoders salvos
+        label_encoders = preprocessor_data['label_encoders']
+        sex_encoded = label_encoders['sex'].transform([sex])[0]
+        smoker_encoded = label_encoders['smoker'].transform([smoker])[0]
+        region_encoded = label_encoders['region'].transform([region])[0]
+        
+        # Features derivadas (mesmo cálculo do original)
+        age_smoker_risk = age * smoker_encoded
+        bmi_smoker_risk = bmi * smoker_encoded
+        age_bmi_interaction = age * bmi
+        
+        # Age group
+        if age < 30:
+            age_group = 0
+        elif age < 45:
+            age_group = 1
+        elif age < 60:
+            age_group = 2
+        else:
+            age_group = 3
+        
+        # BMI category  
+        if bmi < 18.5:
+            bmi_category = 0
+        elif bmi < 25:
+            bmi_category = 1
+        elif bmi < 30:
+            bmi_category = 2
+        else:
+            bmi_category = 3
+        
+        # Composite risk score
+        composite_risk_score = (age * 0.1) + (bmi * 0.2) + (smoker_encoded * 10) + (children * 0.5)
+        
+        # Region density (aproximação)
+        region_density_map = {'southwest': 1, 'southeast': 2, 'northwest': 1, 'northeast': 3}
+        region_density = region_density_map.get(region, 1)
+        
+        # Montar array de features na ordem correta
+        features = [
+            age,
+            sex_encoded,
+            bmi,
+            children,
+            smoker_encoded,
+            region_encoded,
+            age_smoker_risk,
+            bmi_smoker_risk,
+            age_bmi_interaction,
+            age_group,
+            bmi_category,
+            composite_risk_score,
+            region_density
+        ]
+        
+        logger.info(f"✅ Features preparadas para modelo exato: {len(features)} features")
+        return np.array([features])
+        
+    except Exception as e:
+        logger.error(f"❌ Erro na preparação de features exatas: {e}")
+        logger.info("🔄 Tentando fallback para features simples...")
+        return prepare_features_simple_model(data)
+
+def prepare_features_dummy_model(data, encoders):
+    """
+    Prepara features para o modelo dummy treinado usando os encoders salvos
+    """
+    try:
+        # Features básicas
+        age = float(data['age'])
+        bmi = float(data['bmi'])
+        children = int(data['children'])
+        
+        # Aplicar encoders salvos
+        sex_encoded = encoders['sex'].transform([data['sex'].lower()])[0]
+        smoker_encoded = encoders['smoker'].transform([data['smoker'].lower()])[0]
+        region_encoded = encoders['region'].transform([data['region'].lower()])[0]
+        
+        # Features derivadas
+        bmi_smoker = bmi * smoker_encoded
+        age_smoker = age * smoker_encoded
+        
+        # Montar array de features na ordem correta
+        features = [
+            age,
+            sex_encoded,
+            bmi,
+            children,
+            smoker_encoded,
+            region_encoded,
+            bmi_smoker,
+            age_smoker
+        ]
+        
+        logger.info(f"✅ Features preparadas para modelo dummy: {len(features)} features")
+        return np.array([features])
+        
+    except Exception as e:
+        logger.error(f"❌ Erro na preparação de features dummy: {e}")
+        logger.info("🔄 Tentando fallback para features simples...")
+        return prepare_features_simple_model(data)
+
 def predict_premium(input_data, model_data):
     """
     Faz predição usando o modelo carregado
@@ -237,11 +594,20 @@ def predict_premium(input_data, model_data):
         model_type = model_data.get('model_type', 'unknown')
         
         # Preparar features baseado no tipo de modelo
-        if model_type == 'local_superior':
-            # Usar preprocessor para modelo superior
+        if model_type == 'robust_deploy':
+            # Usar encoders do modelo robusto (8 features)
+            features = prepare_features_dummy_model(input_data, model_data.get('encoders', {}))
+        elif model_type == 'exact_replica':
+            # Usar preprocessor específico para modelo exato
+            features = prepare_features_exact_model(input_data, model_data.get('preprocessor'))
+        elif model_type in ['local_superior', 'cloud_compatible']:
+            # Usar preprocessor para modelos superiores
             features = prepare_features_local_model(input_data, model_data.get('preprocessor'))
+        elif model_type == 'dummy_trained':
+            # Usar encoders do modelo dummy treinado
+            features = prepare_features_dummy_model(input_data, model_data.get('encoders', {}))
         else:
-            # Modelos simples (compatível, original, dummy)
+            # Modelos simples (compatível, original, emergency)
             features = prepare_features_simple_model(input_data)
         
         # Fazer predição
