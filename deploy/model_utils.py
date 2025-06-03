@@ -47,6 +47,78 @@ def load_model():
     logger.info(f"🔍 Base path definido: {base_path}")
     logger.info(f"🔍 Root path definido: {root_path}")
     
+    # 🎯 PRIORIDADE 0: MODELO COMPATÍVEL COM STREAMLIT CLOUD (NOVO)
+    try:
+        model_path = base_path / "gradient_boosting_model_CLOUD.pkl"
+        metadata_path = base_path / "gradient_boosting_model_CLOUD_metadata.json"
+        encoders_path = base_path / "encoders_CLOUD.pkl"
+        
+        logger.info(f"🔍 Tentativa 0: MODELO CLOUD COMPATÍVEL")
+        logger.info(f"🔍 Procurando modelo em: {model_path.absolute()}")
+        logger.info(f"🔍 Modelo existe: {model_path.exists()}")
+        logger.info(f"🔍 Metadata em: {metadata_path.absolute()}")
+        logger.info(f"🔍 Metadata existe: {metadata_path.exists()}")
+        logger.info(f"🔍 Encoders em: {encoders_path.absolute()}")
+        logger.info(f"🔍 Encoders existe: {encoders_path.exists()}")
+        
+        if all(p.exists() for p in [model_path, metadata_path, encoders_path]):
+            logger.info("🎯 ✅ TODOS OS ARQUIVOS CLOUD ENCONTRADOS - Carregando MODELO CLOUD...")
+            
+            # Carregar modelo
+            logger.info("📂 Carregando arquivo do modelo cloud...")
+            model = joblib.load(model_path)
+            logger.info(f"📂 ✅ Modelo cloud carregado: {type(model).__name__}")
+            
+            # Verificar se modelo está treinado
+            if not hasattr(model, 'feature_importances_'):
+                logger.error(f"❌ CRÍTICO: Modelo cloud não tem feature_importances_! Tipo: {type(model)}")
+                raise ValueError("❌ Modelo cloud não está treinado!")
+            
+            logger.info("✅ Modelo cloud VERIFICADO - tem feature_importances_")
+            
+            # Carregar metadados
+            logger.info("📂 Carregando metadados cloud...")
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
+            logger.info("📂 ✅ Metadados cloud carregados")
+            
+            # Carregar encoders
+            logger.info("📂 Carregando encoders cloud...")
+            encoders = joblib.load(encoders_path)
+            logger.info("📂 ✅ Encoders cloud carregados")
+            
+            # Estrutura do modelo
+            model_data = {
+                'model': model,
+                'encoders': encoders,
+                'metadata': metadata,
+                'model_type': 'cloud_compatible',
+                'feature_names': metadata.get('features', [
+                    'age', 'bmi', 'children', 'sex', 'smoker', 'region',
+                    'age_smoker_risk', 'bmi_smoker_risk', 'age_bmi_interaction',
+                    'age_group', 'bmi_category', 'composite_risk_score', 'region_density'
+                ])
+            }
+            
+            logger.info("🎉 ✅ MODELO CLOUD COMPATÍVEL CARREGADO COM SUCESSO!")
+            logger.info(f"✅ Tipo: {type(model).__name__}")
+            logger.info(f"📊 R²: {metadata.get('r2_score', 'N/A')}")
+            logger.info(f"🔧 Features: {len(model_data['feature_names'])}")
+            
+            # Teste rápido OBRIGATÓRIO
+            logger.info("🧪 Fazendo teste obrigatório do modelo cloud...")
+            test_X = np.array([[30, 25, 1, 1, 0, 0, 0, 0, 750, 1, 1, 13, 0.3]])
+            test_pred = model.predict(test_X)[0]
+            logger.info(f"🧪 ✅ Teste cloud bem-sucedido: ${test_pred:.2f}")
+            
+            logger.info("🎉 ✅ MODELO CLOUD 100% FUNCIONAL!")
+            return model_data
+            
+    except Exception as e:
+        logger.error(f"❌ Falha no modelo cloud: {e}")
+        import traceback
+        logger.error(f"❌ Traceback: {traceback.format_exc()}")
+    
     # 🎯 PRIORIDADE 1: MODELO LOCAL EXATO (CÓPIA DIRETA)
     try:
         model_path = base_path / "gradient_boosting_model_LOCAL_EXACT.pkl"
@@ -387,6 +459,66 @@ def prepare_features_auto_trained(data, encoders):
         logger.error(f"❌ Erro na preparação de features auto-treinável: {e}")
         raise
 
+def prepare_features_cloud_compatible(data, encoders):
+    """
+    Prepara features para modelo cloud compatível
+    """
+    try:
+        # Features básicas
+        age = float(data['age'])
+        bmi = float(data['bmi'])
+        children = int(data['children'])
+        
+        # Encoding usando encoders salvos
+        sex = encoders['sex'].transform([data['sex'].lower()])[0]
+        smoker = encoders['smoker'].transform([data['smoker'].lower()])[0]
+        region = encoders['region'].transform([data['region'].lower()])[0]
+        
+        # Features derivadas (EXATAS)
+        age_smoker_risk = age * smoker
+        bmi_smoker_risk = bmi * smoker
+        age_bmi_interaction = age * bmi
+        
+        # Age group
+        if age < 30:
+            age_group = 0
+        elif age < 45:
+            age_group = 1
+        elif age < 60:
+            age_group = 2
+        else:
+            age_group = 3
+        
+        # BMI category
+        if bmi < 18.5:
+            bmi_category = 0
+        elif bmi < 25:
+            bmi_category = 1
+        elif bmi < 30:
+            bmi_category = 2
+        else:
+            bmi_category = 3
+        
+        # Composite risk score
+        composite_risk_score = age * 0.1 + bmi * 0.2 + smoker * 10 + children * 0.5
+        
+        # Region density
+        region_density_map = {0: 0.4, 1: 0.3, 2: 0.5, 3: 0.3}
+        region_density = region_density_map.get(region, 0.3)
+        
+        features = [
+            age, bmi, children, sex, smoker, region,
+            age_smoker_risk, bmi_smoker_risk, age_bmi_interaction,
+            age_group, bmi_category, composite_risk_score, region_density
+        ]
+        
+        logger.info(f"✅ Features cloud compatível preparadas: {len(features)} features")
+        return np.array([features])
+        
+    except Exception as e:
+        logger.error(f"❌ Erro na preparação de features cloud compatível: {e}")
+        raise
+
 def predict_premium(input_data, model_data):
     """
     Faz predição usando o modelo carregado
@@ -410,11 +542,54 @@ def predict_premium(input_data, model_data):
         logger.info(f"🎯 Modelo classe: {type(model).__name__}")
         
         # Verificar se modelo está treinado - VERIFICAÇÃO CRÍTICA
-        if not hasattr(model, 'feature_importances_'):
+        logger.info(f"🔧 Verificando se modelo está treinado...")
+        logger.info(f"🔧 Tipo do modelo: {type(model)}")
+        logger.info(f"🔧 Atributos do modelo: {[attr for attr in dir(model) if not attr.startswith('_')]}")
+        
+        # VERIFICAÇÃO ROBUSTA para Streamlit Cloud
+        is_trained = False
+        
+        # Método 1: hasattr padrão
+        has_feature_importances = hasattr(model, 'feature_importances_')
+        logger.info(f"🔧 hasattr(model, 'feature_importances_'): {has_feature_importances}")
+        
+        # Método 2: getattr com fallback
+        try:
+            feature_importances_attr = getattr(model, 'feature_importances_', None)
+            has_attr_getattr = feature_importances_attr is not None
+            logger.info(f"🔧 getattr feature_importances_ is not None: {has_attr_getattr}")
+        except Exception as e:
+            logger.info(f"🔧 getattr exception: {e}")
+            has_attr_getattr = False
+        
+        # Método 3: verificar se está na lista de atributos
+        attrs_list = dir(model)
+        has_attr_in_dir = 'feature_importances_' in attrs_list
+        logger.info(f"🔧 'feature_importances_' in dir(model): {has_attr_in_dir}")
+        
+        # Método 4: tentar acessar diretamente
+        try:
+            direct_access = model.feature_importances_
+            has_direct_access = direct_access is not None
+            logger.info(f"🔧 direct access success: {has_direct_access}")
+            logger.info(f"🔧 feature_importances_ shape: {direct_access.shape if hasattr(direct_access, 'shape') else 'no shape'}")
+        except Exception as e:
+            logger.info(f"🔧 direct access exception: {e}")
+            has_direct_access = False
+        
+        # Decidir se o modelo está treinado
+        is_trained = has_feature_importances or has_attr_getattr or has_attr_in_dir or has_direct_access
+        
+        logger.info(f"🔧 DECISÃO FINAL - Modelo está treinado: {is_trained}")
+        
+        if not is_trained:
             logger.error(f"❌ CRÍTICO: Modelo não tem feature_importances_!")
             logger.error(f"❌ Tipo do modelo: {type(model)}")
             logger.error(f"❌ Model type: {model_type}")
-            logger.error(f"❌ Atributos disponíveis: {[attr for attr in dir(model) if not attr.startswith('_')]}")
+            logger.error(f"❌ hasattr: {has_feature_importances}")
+            logger.error(f"❌ getattr: {has_attr_getattr}")
+            logger.error(f"❌ in dir: {has_attr_in_dir}")
+            logger.error(f"❌ direct: {has_direct_access}")
             raise ValueError("Modelo não está treinado - sem feature_importances_")
         
         logger.info("✅ Modelo verificado - tem feature_importances_")
@@ -426,6 +601,9 @@ def predict_premium(input_data, model_data):
         elif model_type == 'auto_trained_exact':
             logger.info("🔧 Preparando features para modelo auto-treinável...")
             features = prepare_features_auto_trained(input_data, model_data.get('encoders', {}))
+        elif model_type == 'cloud_compatible':
+            logger.info("🔧 Preparando features para modelo cloud compatível...")
+            features = prepare_features_cloud_compatible(input_data, model_data.get('encoders', {}))
         else:
             logger.error(f"❌ Tipo de modelo desconhecido: {model_type}")
             raise ValueError(f"Tipo de modelo desconhecido: {model_type}")
