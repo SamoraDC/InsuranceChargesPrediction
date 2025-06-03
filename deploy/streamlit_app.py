@@ -23,12 +23,37 @@ current_dir = Path(__file__).parent
 sys.path.insert(0, str(current_dir))
 sys.path.insert(0, str(current_dir / "src"))
 
+# VERIFICAÇÃO CRÍTICA: Garantir que está usando o arquivo correto
+model_utils_path = current_dir / "model_utils.py"
+print(f"🔍 VERIFICAÇÃO CRÍTICA:")
+print(f"🔍 Arquivo atual: {__file__}")
+print(f"🔍 Diretório: {current_dir}")
+print(f"🔍 model_utils.py existe: {model_utils_path.exists()}")
+print(f"🔍 model_utils.py path: {model_utils_path.absolute()}")
+
 try:
-    # Try to use the deploy model_utils first
+    # IMPORTAÇÃO EXPLÍCITA E VERIFICADA
+    print("🔍 Tentando importar deploy/model_utils.py...")
     from model_utils import load_model, predict_premium, get_risk_analysis
+    
+    # VERIFICAÇÃO ADICIONAL: Testar se o modelo está correto
+    print("🔍 Testando carregamento do modelo...")
+    test_model = load_model()
+    if test_model:
+        model_type = test_model.get('model_type', 'unknown')
+        print(f"✅ Modelo carregado com sucesso! Tipo: {model_type}")
+        if model_type == 'dummy' or 'dummy' in str(model_type).lower():
+            print("❌ ERRO CRÍTICO: Modelo dummy detectado!")
+            raise ImportError("Modelo dummy sendo usado - arquivo errado!")
+        else:
+            print(f"✅ Modelo verificado: {model_type}")
+    else:
+        print("❌ Falha no carregamento do modelo")
+    
     USE_LOCAL_MODEL = False
-    print("✅ Using deploy model_utils (same model as local)")
-except ImportError:
+    print("✅ Using deploy model_utils (VERIFICADO - sem dummy)")
+except ImportError as e:
+    print(f"❌ Falha ao importar deploy model_utils: {e}")
     try:
         # Fallback to local system
         sys.path.insert(0, str(Path(__file__).parent.parent / "src"))

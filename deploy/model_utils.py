@@ -26,18 +26,26 @@ def load_model():
     # IMPORTANTE: Streamlit Cloud executa do diretório raiz!
     # Detectar se estamos no deploy/ ou na raiz
     current_path = Path(__file__).parent
+    current_working_dir = Path.cwd()
+    
+    logger.info(f"🔍 Arquivo atual: {__file__}")
+    logger.info(f"🔍 Diretório do arquivo: {current_path}")
+    logger.info(f"🔍 Diretório de trabalho: {current_working_dir}")
+    logger.info(f"🔍 Nome do diretório atual: {current_path.name}")
+    
     if current_path.name == 'deploy':
         # Estamos rodando localmente do diretório deploy
         base_path = current_path
         root_path = current_path.parent
+        logger.info("🎯 Modo: EXECUÇÃO LOCAL (deploy/)")
     else:
         # Estamos rodando do diretório raiz (Streamlit Cloud)
         base_path = Path("deploy")
         root_path = Path(".")
+        logger.info("🎯 Modo: STREAMLIT CLOUD (raiz)")
     
-    logger.info(f"🔍 Diretório atual: {current_path}")
-    logger.info(f"🔍 Base path: {base_path}")
-    logger.info(f"🔍 Root path: {root_path}")
+    logger.info(f"🔍 Base path definido: {base_path}")
+    logger.info(f"🔍 Root path definido: {root_path}")
     
     # 🎯 PRIORIDADE 1: MODELO LOCAL EXATO (CÓPIA DIRETA)
     try:
@@ -45,27 +53,40 @@ def load_model():
         metadata_path = base_path / "gradient_boosting_model_LOCAL_EXACT_metadata.json"
         preprocessor_path = base_path / "models" / "model_artifacts" / "preprocessor_LOCAL_EXACT.pkl"
         
-        logger.info(f"🔍 Procurando modelo em: {model_path}")
+        logger.info(f"🔍 Tentativa 1: MODELO LOCAL EXATO")
+        logger.info(f"🔍 Procurando modelo em: {model_path.absolute()}")
         logger.info(f"🔍 Modelo existe: {model_path.exists()}")
+        logger.info(f"🔍 Metadata em: {metadata_path.absolute()}")
         logger.info(f"🔍 Metadata existe: {metadata_path.exists()}")
+        logger.info(f"🔍 Preprocessor em: {preprocessor_path.absolute()}")
         logger.info(f"🔍 Preprocessor existe: {preprocessor_path.exists()}")
         
         if all(p.exists() for p in [model_path, metadata_path, preprocessor_path]):
-            logger.info("🎯 Carregando MODELO LOCAL EXATO...")
+            logger.info("🎯 ✅ TODOS OS ARQUIVOS ENCONTRADOS - Carregando MODELO LOCAL EXATO...")
             
             # Carregar modelo
+            logger.info("📂 Carregando arquivo do modelo...")
             model = joblib.load(model_path)
+            logger.info(f"📂 ✅ Modelo carregado: {type(model).__name__}")
             
             # Verificar se modelo está treinado
             if not hasattr(model, 'feature_importances_'):
-                raise ValueError("❌ Modelo não está treinado!")
+                logger.error(f"❌ CRÍTICO: Modelo não tem feature_importances_! Tipo: {type(model)}")
+                logger.error(f"❌ Atributos do modelo: {dir(model)}")
+                raise ValueError("❌ Modelo principal não está treinado!")
+            
+            logger.info("✅ Modelo principal VERIFICADO - tem feature_importances_")
             
             # Carregar metadados
+            logger.info("📂 Carregando metadados...")
             with open(metadata_path, 'r') as f:
                 metadata = json.load(f)
+            logger.info("📂 ✅ Metadados carregados")
             
             # Carregar preprocessor
+            logger.info("📂 Carregando preprocessor...")
             preprocessor_data = joblib.load(preprocessor_path)
+            logger.info("📂 ✅ Preprocessor carregado")
             
             # Estrutura do modelo
             model_data = {
@@ -80,25 +101,29 @@ def load_model():
                 ]
             }
             
-            logger.info("🎉 MODELO LOCAL EXATO CARREGADO COM SUCESSO!")
+            logger.info("🎉 ✅ MODELO LOCAL EXATO CARREGADO COM SUCESSO!")
             logger.info(f"✅ Tipo: {type(model).__name__}")
             logger.info(f"📊 R²: {metadata['training_history']['final_test_metrics']['r2']:.4f}")
             logger.info(f"💰 MAE: ${metadata['training_history']['final_test_metrics']['mae']:.2f}")
             logger.info(f"🔧 Features: {len(model_data['feature_names'])}")
             
-            # Teste rápido
+            # Teste rápido OBRIGATÓRIO
+            logger.info("🧪 Fazendo teste obrigatório do modelo...")
             test_X = np.array([[30, 1, 25, 1, 0, 0, 0, 0, 750, 1, 1, 13, 0.3]])
             test_pred = model.predict(test_X)[0]
-            logger.info(f"🧪 Teste: ${test_pred:.2f}")
+            logger.info(f"🧪 ✅ Teste bem-sucedido: ${test_pred:.2f}")
             
+            logger.info("🎉 ✅ MODELO LOCAL EXATO 100% FUNCIONAL!")
             return model_data
             
     except Exception as e:
         logger.error(f"❌ Falha no modelo local exato: {e}")
+        import traceback
+        logger.error(f"❌ Traceback: {traceback.format_exc()}")
     
     # 🎯 PRIORIDADE 2: MODELO AUTO-TREINÁVEL (GARANTIA PARA CLOUD)
     try:
-        logger.info("🚀 Criando modelo auto-treinável como fallback...")
+        logger.info("🚀 FALLBACK: Criando modelo auto-treinável...")
         
         # Carregar dados CSV - CAMINHOS AJUSTADOS PARA STREAMLIT CLOUD
         csv_paths = [
@@ -116,11 +141,13 @@ def load_model():
         ]
         
         df = None
-        for csv_path in csv_paths:
-            logger.info(f"🔍 Tentando carregar dados de: {csv_path}")
+        for i, csv_path in enumerate(csv_paths, 1):
+            logger.info(f"🔍 Tentativa {i}: Procurando dados em: {csv_path.absolute()}")
             if csv_path.exists():
+                logger.info(f"✅ Arquivo encontrado! Carregando...")
                 df = pd.read_csv(csv_path)
                 logger.info(f"✅ Dados carregados de: {csv_path}")
+                logger.info(f"📊 Shape dos dados: {df.shape}")
                 break
             else:
                 logger.info(f"❌ Arquivo não encontrado: {csv_path}")
@@ -129,6 +156,7 @@ def load_model():
             raise FileNotFoundError("❌ insurance.csv não encontrado em nenhum local")
         
         # Preparar features EXATAMENTE como o modelo local
+        logger.info("⚙️ Preparando features para treinamento...")
         from sklearn.preprocessing import LabelEncoder
         from sklearn.ensemble import GradientBoostingRegressor
         
@@ -168,6 +196,9 @@ def load_model():
         
         y = df['charges']
         
+        logger.info(f"📊 Features preparadas: {X.shape}")
+        logger.info(f"📊 Target shape: {y.shape}")
+        
         # Treinar com MESMOS parâmetros do modelo local
         model = GradientBoostingRegressor(
             max_depth=6,
@@ -182,13 +213,25 @@ def load_model():
         
         logger.info("⚡ Treinando modelo auto-treinável...")
         model.fit(X, y)
+        logger.info("⚡ ✅ Treinamento concluído!")
         
-        # Verificar treinamento
+        # Verificar treinamento OBRIGATÓRIO
         if not hasattr(model, 'feature_importances_'):
-            raise ValueError("❌ Modelo auto-treinável não foi treinado!")
+            logger.error(f"❌ CRÍTICO: Modelo auto-treinável não tem feature_importances_!")
+            logger.error(f"❌ Tipo: {type(model)}")
+            logger.error(f"❌ Atributos: {dir(model)}")
+            raise ValueError("❌ Modelo auto-treinável não foi treinado corretamente!")
+        
+        logger.info("✅ Modelo auto-treinável VERIFICADO - tem feature_importances_")
         
         score = model.score(X, y)
         logger.info(f"📊 R² do modelo auto-treinável: {score:.4f}")
+        
+        # Teste obrigatório
+        logger.info("🧪 Testando modelo auto-treinável...")
+        test_sample = X.iloc[0:1]
+        test_pred = model.predict(test_sample)[0]
+        logger.info(f"🧪 ✅ Teste bem-sucedido: ${test_pred:.2f}")
         
         # Salvar encoders
         encoders = {
@@ -205,7 +248,7 @@ def load_model():
             'r2_score': score
         }
         
-        logger.info("🎉 MODELO AUTO-TREINÁVEL CRIADO!")
+        logger.info("🎉 ✅ MODELO AUTO-TREINÁVEL CRIADO E TESTADO!")
         return model_data
         
     except Exception as e:
@@ -214,6 +257,7 @@ def load_model():
         logger.error(f"❌ Traceback: {traceback.format_exc()}")
     
     logger.error("❌ TODOS OS MODELOS FALHARAM!")
+    logger.error("❌ NÃO RETORNANDO MODELO DUMMY - SISTEMA DEVE FALHAR!")
     return None
 
 def prepare_features_local_exact(data, preprocessor=None):
@@ -348,29 +392,52 @@ def predict_premium(input_data, model_data):
     Faz predição usando o modelo carregado
     """
     try:
-        if model_data is None or 'model' not in model_data:
-            raise ValueError("Modelo não carregado")
+        logger.info("🎯 Iniciando predição...")
+        
+        if model_data is None:
+            logger.error("❌ model_data é None!")
+            raise ValueError("Modelo não carregado - model_data é None")
+        
+        if 'model' not in model_data:
+            logger.error("❌ Chave 'model' não encontrada em model_data!")
+            logger.error(f"❌ Chaves disponíveis: {list(model_data.keys())}")
+            raise ValueError("Modelo não carregado - chave 'model' não encontrada")
         
         model = model_data['model']
         model_type = model_data.get('model_type', 'unknown')
         
-        # Verificar se modelo está treinado
+        logger.info(f"🎯 Modelo tipo: {model_type}")
+        logger.info(f"🎯 Modelo classe: {type(model).__name__}")
+        
+        # Verificar se modelo está treinado - VERIFICAÇÃO CRÍTICA
         if not hasattr(model, 'feature_importances_'):
-            raise ValueError("Modelo não está treinado")
+            logger.error(f"❌ CRÍTICO: Modelo não tem feature_importances_!")
+            logger.error(f"❌ Tipo do modelo: {type(model)}")
+            logger.error(f"❌ Model type: {model_type}")
+            logger.error(f"❌ Atributos disponíveis: {[attr for attr in dir(model) if not attr.startswith('_')]}")
+            raise ValueError("Modelo não está treinado - sem feature_importances_")
+        
+        logger.info("✅ Modelo verificado - tem feature_importances_")
         
         # Preparar features baseado no tipo
         if model_type == 'local_exact':
+            logger.info("🔧 Preparando features para modelo local exato...")
             features = prepare_features_local_exact(input_data, model_data.get('preprocessor'))
         elif model_type == 'auto_trained_exact':
+            logger.info("🔧 Preparando features para modelo auto-treinável...")
             features = prepare_features_auto_trained(input_data, model_data.get('encoders', {}))
         else:
+            logger.error(f"❌ Tipo de modelo desconhecido: {model_type}")
             raise ValueError(f"Tipo de modelo desconhecido: {model_type}")
         
+        logger.info(f"🔧 Features preparadas: shape {features.shape}")
+        
         # Fazer predição
+        logger.info("🎯 Fazendo predição...")
         prediction = model.predict(features)[0]
         prediction = max(0, prediction)  # Garantir valor positivo
         
-        logger.info(f"✅ Predição realizada: ${prediction:.2f} (modelo: {model_type})")
+        logger.info(f"✅ Predição realizada com sucesso: ${prediction:.2f} (modelo: {model_type})")
         
         return {
             'success': True,
