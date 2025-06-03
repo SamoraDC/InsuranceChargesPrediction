@@ -14,7 +14,24 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import time
-from model_utils import load_model, predict_premium, get_risk_analysis
+import joblib
+from pathlib import Path
+import sys
+
+# Add path for local imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+try:
+    # Try to use the same system as local
+    from insurance_prediction.models.predictor import load_production_model, predict_insurance_premium
+    from insurance_prediction.config.settings import Config
+    USE_LOCAL_MODEL = True
+    print("✅ Using local model system (same as app_new.py)")
+except ImportError:
+    # Fallback to deployment model_utils
+    from model_utils import load_model, predict_premium, get_risk_analysis
+    USE_LOCAL_MODEL = False
+    print("⚠️ Using deployment model_utils (fallback)")
 
 # =============================================================================
 # TRANSLATIONS / TRADUÇÕES
@@ -126,12 +143,12 @@ TRANSLATIONS = {
         "technology": "🤖 Technology",
         "tech_algorithm": "**Algorithm:** Gradient Boosting (sklearn)",
         "tech_performance": "**Performance:** R² > 0.87, MAE < $2,700", 
-        "tech_architecture": "**Architecture:** Independent and optimized for cloud deployment",
+        "tech_architecture": "**Architecture:** Advanced feature engineering with 13 features",
         "important_features": "📊 Important Features",
         "feature1": "**Smoker** - Highest impact on insurance",
         "feature2": "**Age** - Second highest impact",
         "feature3": "**BMI** - Third highest impact", 
-        "feature4": "**Interactions** - age_smoker, bmi_smoker",
+        "feature4": "**Advanced features** - age_smoker_risk, bmi_smoker_risk, composite_risk_score",
         
         # Error Messages
         "model_unavailable": "❌ Model not available. Please check configuration.",
@@ -211,45 +228,45 @@ TRANSLATIONS = {
         # Results
         "prediction_result": "🔮 Resultado da Predição",
         "estimated_insurance": "💰 Convênio Estimado",
-        "annual_insurance": "Valor anual do convênio médico",
+        "annual_insurance": "Convênio Anual ($)",
         "monthly": "💳 Mensal",
         "monthly_approx": "Valor mensal aproximado",
         "processing": "⚡ Processamento",
         "processing_time": "Tempo de processamento",
         "model": "🤖 Modelo",
-        "algorithm_used": "Algoritmo utilizado",
+        "algorithm_used": "Algoritmo usado",
         
-        # Risk Analysis  
+        # Risk Analysis
         "risk_analysis": "📊 Análise de Risco",
-        "factors_increase": "⚠️ **Fatores que elevam o convênio:**",
-        "low_risk_profile": "✅ **Perfil de baixo risco** - Poucos fatores que elevam o convênio",
+        "factors_increase": "⚠️ **Fatores que aumentam o convênio:**",
+        "low_risk_profile": "✅ **Perfil de baixo risco** - Poucos fatores que aumentam o convênio",
         "comparison_title": "📈 Comparação com Perfis Similares",
         "your_profile": "Seu Perfil",
-        "non_smokers": "Não Fumantes", 
-        "smokers": "Fumantes",
+        "non_smokers": "Não Fumantes",
+        "smokers": "Fumantes", 
         "general_average": "Média Geral",
-        "comparison_chart_title": "Comparação de Convênios por Categoria",
+        "comparison_chart_title": "Comparação de Convênio por Categoria",
         "annual_insurance": "Convênio Anual ($)",
         
         # Risk Factors
-        "high_risk_smoker": "🚬 Fumante - ALTO RISCO",
+        "high_risk_smoker": "🚬 Fumante - RISCO ALTO",
         "advanced_age": "👴 Idade avançada",
-        "high_bmi": "⚖️ BMI elevado (obesidade)",
+        "high_bmi": "⚖️ BMI alto (obesidade)",
         "low_bmi": "⚖️ BMI baixo (abaixo do peso)",
         
-        # About Section
+        # About Section  
         "about_project": "ℹ️ Sobre o Projeto",
         "objective": "🎯 Objetivo",
-        "objective_text": "Sistema de predição de Preço de convênios médicos usando técnicas avançadas de Machine Learning.",
+        "objective_text": "Sistema de predição de preços de convênio médico usando técnicas avançadas de Machine Learning.",
         "technology": "🤖 Tecnologia",
         "tech_algorithm": "**Algoritmo:** Gradient Boosting (sklearn)",
         "tech_performance": "**Performance:** R² > 0.87, MAE < $2,700",
-        "tech_architecture": "**Arquitetura:** Independente e otimizada para deploy em nuvem",
+        "tech_architecture": "**Arquitetura:** Feature engineering avançado com 13 features",
         "important_features": "📊 Features Importantes",
         "feature1": "**Fumante** - Maior impacto no convênio",
         "feature2": "**Idade** - Segundo maior impacto",
         "feature3": "**BMI** - Terceiro maior impacto",
-        "feature4": "**Interações** - age_smoker, bmi_smoker",
+        "feature4": "**Features avançadas** - age_smoker_risk, bmi_smoker_risk, composite_risk_score",
         
         # Error Messages
         "model_unavailable": "❌ Modelo não disponível. Verifique a configuração.",
@@ -259,232 +276,280 @@ TRANSLATIONS = {
 }
 
 def t(key: str, lang: str = "en") -> str:
-    """Get translation for given key and language."""
+    """Get translation for key in specified language."""
     return TRANSLATIONS.get(lang, {}).get(key, key)
-
-# =============================================================================
-# MAIN APPLICATION / APLICAÇÃO PRINCIPAL
-# =============================================================================
 
 @st.cache_resource
 def cached_load_model():
-    """Cache model loading for better performance."""
-    return load_model()
+    """Load model with caching."""
+    if USE_LOCAL_MODEL:
+        try:
+            predictor = load_production_model()
+            return {"type": "local", "predictor": predictor}
+        except Exception as e:
+            st.error(f"Error loading local model: {e}")
+            return None
+    else:
+        model_data = load_model()
+        return {"type": "deployment", "model_data": model_data}
 
 def main():
-    """Main application function."""
-    
     # Page configuration
     st.set_page_config(
-        page_title="🏥 Insurance Charges Predictor",
+        page_title="🏥 Insurance Predictor",
         page_icon="🏥",
         layout="wide",
         initial_sidebar_state="expanded"
     )
-    
-    # Initialize session state for language
-    if 'language' not in st.session_state:
-        st.session_state.language = 'pt'  # Default to Portuguese
-    
-    # Language toggle in sidebar
-    with st.sidebar:
-        st.subheader(t("language", st.session_state.language))
-        lang_option = st.radio(
-            "Select Language",
-            ["🇧🇷 Português", "🇺🇸 English"],
-            index=0 if st.session_state.language == 'pt' else 1,
-            key="lang_radio",
-            label_visibility="collapsed"
-        )
-        
-        # Update language
-        if "Português" in lang_option:
-            st.session_state.language = 'pt'
-        else:
-            st.session_state.language = 'en'
-    
-    lang = st.session_state.language
-    
+
+    # Custom CSS
+    st.markdown("""
+    <style>
+    .main-header {
+        font-size: 3rem;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    .prediction-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        text-align: center;
+        margin: 1rem 0;
+    }
+    .metric-box {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border-left: 4px solid #007bff;
+        margin: 0.5rem 0;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Language selection in sidebar
+    st.sidebar.title("🌍 Language / Idioma")
+    lang = st.sidebar.selectbox(
+        "Select language / Selecione o idioma",
+        options=["pt", "en"],
+        format_func=lambda x: "🇧🇷 Português" if x == "pt" else "🇺🇸 English"
+    )
+
     # Main header
-    st.title(t("main_header", lang))
-    st.markdown(f"**{t('sub_header', lang)}**")
-    st.markdown("---")
-    
+    st.markdown(f'<h1 class="main-header">{t("main_header", lang)}</h1>', unsafe_allow_html=True)
+    st.markdown(f'<p style="text-align: center; font-size: 1.2rem;">{t("sub_header", lang)}</p>', unsafe_allow_html=True)
+
     # Load model
-    model_data = cached_load_model()
+    model_info = cached_load_model()
     
     # Sidebar information
-    with st.sidebar:
-        st.markdown("---")
-        st.subheader(t("sidebar_title", lang))
+    st.sidebar.markdown("---")
+    st.sidebar.title(t("sidebar_title", lang))
+    
+    if model_info:
+        st.sidebar.success(t("model_loaded", lang))
         
-        if model_data:
-            st.success(t("model_loaded", lang))
-            
-            # Model details
-            with st.expander(t("model_details", lang)):
-                metrics = model_data.get('metrics', {})
+        with st.sidebar.expander(t("model_details", lang)):
+            if USE_LOCAL_MODEL:
+                st.write(f"**{t('algorithm', lang)}:** Gradient Boosting (Advanced)")
+                st.write(f"**{t('version', lang)}:** 2.0.0 (Local System)")
+                st.write(f"**Features:** 13 (with feature engineering)")
+            else:
                 st.write(f"**{t('algorithm', lang)}:** Gradient Boosting")
-                st.write(f"**{t('version', lang)}:** 1.0.0")
-                st.write(f"**R²:** {metrics.get('r2', 0.88):.3f}")
-                st.write(f"**{t('mae', lang)}:** ${metrics.get('mae', 2650):.0f}")
-        else:
-            st.error(t("model_not_loaded", lang))
-        
-        # Quick guide
-        st.markdown("---")
-        with st.expander(t("quick_guide", lang)):
-            st.markdown(f"**{t('how_to_use', lang)}**")
-            st.markdown(f"- {t('step1', lang)}")
-            st.markdown(f"- {t('step2', lang)}")
-            st.markdown(f"- {t('step3', lang)}")
-            
-            st.markdown(f"**{t('important_vars', lang)}**")
-            st.markdown(f"- {t('smoker_impact', lang)}")
-            st.markdown(f"- {t('age_impact', lang)}")
-            st.markdown(f"- {t('bmi_impact', lang)}")
+                st.write(f"**{t('version', lang)}:** 1.0.0 (Deployment)")
+                st.write(f"**Features:** 8 (simplified)")
+    else:
+        st.sidebar.error(t("model_not_loaded", lang))
+
+    # Navigation tabs
+    tab1, tab2 = st.tabs([t("tab_individual", lang), t("tab_about", lang)])
     
-    # Main tabs
-    tab1, tab2 = st.tabs([
-        t("tab_individual", lang),
-        t("tab_about", lang)
-    ])
-    
-    # Tab 1: Individual Prediction
     with tab1:
-        individual_prediction_tab(lang, model_data)
+        individual_prediction_tab(lang, model_info)
     
-    # Tab 2: About
     with tab2:
         about_tab(lang)
 
 def individual_prediction_tab(lang: str, model_data):
-    """Individual prediction tab content."""
-    
-    if not model_data:
-        st.error(t("model_unavailable", lang))
-        return
+    """Individual prediction tab."""
     
     # Input form
-    with st.container():
-        st.subheader(t("insured_data", lang))
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            age = st.number_input(
-                t("age", lang),
-                min_value=18, max_value=64, value=35,
-                help=t("age_help", lang)
-            )
-            
-            gender = st.selectbox(
-                t("gender", lang),
-                [t("male", lang), t("female", lang)],
-                help=t("gender_help", lang)
-            )
-            
-        with col2:
-            smoker_status = st.selectbox(
-                t("smoker", lang),
-                [t("non_smoker", lang), t("smoker_yes", lang)],
-                help=t("smoker_help", lang)
-            )
-            
-            bmi = st.number_input(
-                t("bmi", lang),
-                min_value=15.0, max_value=55.0, value=25.0, step=0.1,
-                help=t("bmi_help", lang)
-            )
-            
-        with col3:
-            children = st.number_input(
-                t("children", lang),
-                min_value=0, max_value=5, value=0,
-                help=t("children_help", lang)
-            )
-            
-            region = st.selectbox(
-                t("region", lang),
-                [t("northeast", lang), t("northwest", lang), 
-                 t("southeast", lang), t("southwest", lang)],
-                help=t("region_help", lang)
-            )
-        
-        # BMI category
-        bmi_category = get_bmi_category(bmi)
-        bmi_label = t(bmi_category, lang)
-        st.info(f"**{t('bmi_category', lang)}:** {bmi_label}")
-        
-        # Prediction button
-        st.markdown("---")
-        
-        if st.button(t("calculate_btn", lang), type="primary", use_container_width=True):
-            
-            # Prepare data
-            input_data = {
-                "age": age,
-                "sex": "male" if t("male", lang) in gender else "female",
-                "bmi": bmi,
-                "children": children,
-                "smoker": "yes" if t("smoker_yes", lang) in smoker_status else "no",
-                "region": map_region_to_english(region, lang)
-            }
-            
-            # Show loading
-            with st.spinner(t("calculating", lang)):
-                time.sleep(0.5)  # Brief delay for UX
-                
-                # Make prediction
-                result = predict_premium(input_data, model_data)
-                
-                if result["success"]:
-                    show_prediction_results(result, input_data, lang)
-                else:
-                    st.error(f"{t('prediction_error', lang)} {result.get('error', 'Unknown error')}")
-
-def show_prediction_results(result, input_data, lang):
-    """Display prediction results with charts."""
+    st.subheader(t("insured_data", lang))
     
-    premium = result["predicted_premium"]
-    monthly = result["monthly_premium"]
-    processing_time = result["processing_time_ms"]
-    
-    # Results header
-    st.markdown("---")
-    st.subheader(t("prediction_result", lang))
-    
-    # Main metrics
     col1, col2 = st.columns(2)
     
     with col1:
-        st.metric(
-            label=f"💰 {t('estimated_insurance', lang)}",
-            value=f"${premium:,.2f}",
-            help=t("annual_insurance", lang)
+        age = st.number_input(
+            t("age", lang),
+            min_value=18,
+            max_value=64,
+            value=25,
+            step=1,
+            help=t("age_help", lang)
+        )
+        
+        sex = st.selectbox(
+            t("gender", lang),
+            options=["male", "female"],
+            format_func=lambda x: t("male", lang) if x == "male" else t("female", lang),
+            help=t("gender_help", lang)
+        )
+        
+        smoker = st.selectbox(
+            t("smoker", lang),
+            options=["no", "yes"],
+            format_func=lambda x: t("non_smoker", lang) if x == "no" else t("smoker_yes", lang),
+            help=t("smoker_help", lang)
         )
     
     with col2:
+        bmi = st.number_input(
+            t("bmi", lang),
+            min_value=15.0,
+            max_value=55.0,
+            value=22.6,
+            step=0.1,
+            format="%.1f",
+            help=t("bmi_help", lang)
+        )
+        
+        children = st.number_input(
+            t("children", lang),
+            min_value=0,
+            max_value=5,
+            value=0,
+            step=1,
+            help=t("children_help", lang)
+        )
+        
+        region = st.selectbox(
+            t("region", lang),
+            options=["northeast", "northwest", "southeast", "southwest"],
+            format_func=lambda x: {
+                "northeast": t("northeast", lang),
+                "northwest": t("northwest", lang),
+                "southeast": t("southeast", lang),
+                "southwest": t("southwest", lang)
+            }[x],
+            help=t("region_help", lang)
+        )
+
+    # BMI category display
+    bmi_category = get_bmi_category(bmi)
+    st.info(f"**{t('bmi_category', lang)}:** {bmi_category}")
+
+    # Prediction button
+    if st.button(t("calculate_btn", lang), type="primary", use_container_width=True):
+        with st.spinner(t("calculating", lang)):
+            input_data = {
+                'age': int(age),
+                'sex': sex,
+                'bmi': float(bmi),
+                'children': int(children),
+                'smoker': smoker,
+                'region': region
+            }
+            
+            if model_data:
+                if USE_LOCAL_MODEL and model_data["type"] == "local":
+                    # Use local model system
+                    try:
+                        result = predict_insurance_premium(**input_data)
+                        show_prediction_results_local(result, input_data, lang)
+                    except Exception as e:
+                        st.error(f"{t('prediction_error', lang)} {e}")
+                else:
+                    # Use deployment model system  
+                    result = predict_premium(input_data, model_data["model_data"])
+                    if result["success"]:
+                        show_prediction_results(result, input_data, lang)
+                    else:
+                        st.error(f"{t('prediction_error', lang)} {result['error']}")
+            else:
+                st.error(t("model_unavailable", lang))
+
+def show_prediction_results_local(result, input_data, lang):
+    """Show prediction results using local model system."""
+    st.subheader(t("prediction_result", lang))
+    
+    premium = result['predicted_premium']
+    
+    # Main prediction card
+    st.markdown(f"""
+    <div class="prediction-card">
+        <h2>💰 {t("estimated_insurance", lang)}</h2>
+        <h1>${premium:,.2f}</h1>
+        <p>{t("annual_insurance", lang)}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Additional metrics
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
         st.metric(
-            label=f"💳 {t('monthly', lang)}",
-            value=f"${monthly:,.2f}",
+            f"💳 {t('monthly', lang)}",
+            f"${premium/12:,.2f}",
             help=t("monthly_approx", lang)
         )
     
-    # Performance metrics
-    col3, col4 = st.columns(2)
-    
-    with col3:
+    with col2:
+        processing_time = result.get('processing_time_ms', 0)
         st.metric(
-            label=f"⚡ {t('processing', lang)}",
-            value=f"{processing_time:.0f}ms",
+            f"⚡ {t('processing', lang)}",
+            f"{processing_time:.1f}ms",
             help=t("processing_time", lang)
         )
     
-    with col4:
+    with col3:
         st.metric(
-            label=f"🤖 {t('model', lang)}",
-            value="Gradient Boosting",
+            f"🤖 {t('model', lang)}",
+            result.get('model_type', 'Gradient Boosting'),
+            help=t("algorithm_used", lang)
+        )
+    
+    # Risk analysis
+    show_risk_analysis(input_data, premium, lang)
+
+def show_prediction_results(result, input_data, lang):
+    """Show prediction results using deployment model."""
+    st.subheader(t("prediction_result", lang))
+    
+    premium = result['predicted_premium']
+    
+    # Main prediction card
+    st.markdown(f"""
+    <div class="prediction-card">
+        <h2>💰 {t("estimated_insurance", lang)}</h2>
+        <h1>${premium:,.2f}</h1>
+        <p>{t("annual_insurance", lang)}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Additional metrics
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric(
+            f"💳 {t('monthly', lang)}",
+            f"${result['monthly_premium']:,.2f}",
+            help=t("monthly_approx", lang)
+        )
+    
+    with col2:
+        processing_time = result.get('processing_time_ms', 0)
+        st.metric(
+            f"⚡ {t('processing', lang)}",
+            f"{processing_time:.1f}ms",
+            help=t("processing_time", lang)
+        )
+    
+    with col3:
+        st.metric(
+            f"🤖 {t('model', lang)}",
+            "Gradient Boosting",
             help=t("algorithm_used", lang)
         )
     
@@ -492,113 +557,81 @@ def show_prediction_results(result, input_data, lang):
     show_risk_analysis(input_data, premium, lang)
 
 def show_risk_analysis(input_data, premium, lang):
-    """Show risk analysis and comparison charts."""
-    
-    st.markdown("---")
+    """Show risk analysis."""
     st.subheader(t("risk_analysis", lang))
     
     # Risk factors
     risk_factors = []
     
-    if input_data["smoker"] == "yes":
+    if input_data['smoker'] == 'yes':
         risk_factors.append(t("high_risk_smoker", lang))
     
-    if input_data["age"] >= 50:
+    if input_data['age'] > 50:
         risk_factors.append(t("advanced_age", lang))
     
-    if input_data["bmi"] >= 30:
+    if input_data['bmi'] > 30:
         risk_factors.append(t("high_bmi", lang))
-    elif input_data["bmi"] < 18.5:
+    
+    if input_data['bmi'] < 18.5:
         risk_factors.append(t("low_bmi", lang))
     
     if risk_factors:
-        st.markdown(t("factors_increase", lang))
+        st.markdown(f"**{t('factors_increase', lang)}**")
         for factor in risk_factors:
             st.markdown(f"- {factor}")
     else:
         st.success(t("low_risk_profile", lang))
-    
-    # Comparison chart
-    st.markdown("---")
-    st.subheader(t("comparison_title", lang))
-    
-    # Sample comparison data (simplified)
-    comparison_data = {
-        t("your_profile", lang): premium,
-        t("non_smokers", lang): premium * 0.6 if input_data["smoker"] == "yes" else premium,
-        t("smokers", lang): premium * 1.8 if input_data["smoker"] == "no" else premium,
-        t("general_average", lang): 13270  # Approximate average
-    }
-    
-    # Create comparison chart
-    fig = px.bar(
-        x=list(comparison_data.keys()),
-        y=list(comparison_data.values()),
-        title=t("comparison_chart_title", lang),
-        labels={'x': '', 'y': t("annual_insurance", lang)},
-        color=list(comparison_data.values()),
-        color_continuous_scale="viridis"
-    )
-    
-    fig.update_layout(
-        height=400,
-        showlegend=False,
-        xaxis_tickangle=-45
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
 
 def about_tab(lang):
-    """About tab content."""
-    
+    """About tab."""
     st.subheader(t("about_project", lang))
     
-    # Objective
-    st.markdown(f"### {t('objective', lang)}")
-    st.markdown(t("objective_text", lang))
+    col1, col2 = st.columns(2)
     
-    # Technology
-    st.markdown(f"### {t('technology', lang)}")
-    st.markdown(f"- {t('tech_algorithm', lang)}")
-    st.markdown(f"- {t('tech_performance', lang)}")
-    st.markdown(f"- {t('tech_architecture', lang)}")
+    with col1:
+        st.markdown(f"""
+        ### {t("objective", lang)}
+        {t("objective_text", lang)}
+        
+        ### {t("technology", lang)}
+        - {t("tech_algorithm", lang)}
+        - {t("tech_performance", lang)}
+        - {t("tech_architecture", lang)}
+        """)
     
-    # Important features
-    st.markdown(f"### {t('important_features', lang)}")
-    st.markdown(f"1. {t('feature1', lang)}")
-    st.markdown(f"2. {t('feature2', lang)}")
-    st.markdown(f"3. {t('feature3', lang)}")
-    st.markdown(f"4. {t('feature4', lang)}")
+    with col2:
+        st.markdown(f"""
+        ### {t("important_features", lang)}
+        - {t("feature1", lang)}
+        - {t("feature2", lang)}
+        - {t("feature3", lang)}
+        - {t("feature4", lang)}
+        """)
 
 def get_bmi_category(bmi):
     """Get BMI category."""
     if bmi < 18.5:
-        return "underweight"
+        return "Abaixo do peso"
     elif bmi < 25:
-        return "normal_weight"
+        return "Peso normal"
     elif bmi < 30:
-        return "overweight"
+        return "Sobrepeso"
     else:
-        return "obesity"
+        return "Obesidade"
 
 def map_region_to_english(region_display, lang):
-    """Map displayed region to english value."""
-    if lang == "pt":
-        region_map = {
-            "🏢 Nordeste": "northeast",
-            "🏔️ Noroeste": "northwest", 
-            "🏖️ Sudeste": "southeast",
-            "🌵 Sudoeste": "southwest"
-        }
-    else:
-        region_map = {
-            "🏢 Northeast": "northeast",
-            "🏔️ Northwest": "northwest",
-            "🏖️ Southeast": "southeast", 
-            "🌵 Southwest": "southwest"
-        }
-    
-    return region_map.get(region_display, "northeast")
+    """Map region display to English values."""
+    region_map = {
+        "🏢 Nordeste": "northeast",
+        "🏔️ Noroeste": "northwest", 
+        "🏖️ Sudeste": "southeast",
+        "🌵 Sudoeste": "southwest",
+        "🏢 Northeast": "northeast",
+        "🏔️ Northwest": "northwest",
+        "🏖️ Southeast": "southeast", 
+        "🌵 Southwest": "southwest"
+    }
+    return region_map.get(region_display, region_display)
 
 if __name__ == "__main__":
     main() 

@@ -1,0 +1,66 @@
+{
+  "model_type": "GradientBoostingRegressor",
+  "best_params": null,
+  "training_history": {
+    "model": "GradientBoostingRegressor(max_depth=6, max_features='sqrt', min_samples_leaf=4,\n                          min_samples_split=10, n_estimators=200,\n                          n_iter_no_change=10, random_state=42, subsample=0.8)",
+    "model_type": "Gradient Boosting Optimized",
+    "baseline_results": {
+      "model": "GradientBoostingRegressor(max_depth=6, max_features='sqrt', min_samples_leaf=4,\n                          min_samples_split=10, n_estimators=200,\n                          n_iter_no_change=10, random_state=42, subsample=0.8)",
+      "model_type": "Gradient Boosting Baseline",
+      "train_metrics": {
+        "mae": 2065.747315498299,
+        "mse": 13629639.396722844,
+        "rmse": 3691.8341507606815,
+        "r2": 0.9004515777251186,
+        "adjusted_r2": 0.9003582802347017,
+        "mape": 27.712611915832007,
+        "mbe": 42.51117870665298
+      },
+      "test_metrics": {
+        "mae": 2642.8174134366877,
+        "mse": 19802521.076487042,
+        "rmse": 4450.002368143982,
+        "r2": 0.8922347342395298,
+        "adjusted_r2": 0.891829601661483,
+        "mape": 36.699639089590946,
+        "mbe": 228.5805354073574
+      },
+      "cv_r2_mean": 0.8378953580380729,
+      "cv_r2_std": 0.018631328054864678,
+      "training_time": 0.241757,
+      "feature_importance": "                 feature  importance\n11  composite_risk_score    0.319664\n4                 smoker    0.217528\n7        bmi_smoker_risk    0.154228\n6        age_smoker_risk    0.137124\n0                    age    0.043815\n8    age_bmi_interaction    0.036550\n9              age_group    0.029753\n2                    bmi    0.025953\n3               children    0.015388\n10          bmi_category    0.007265\n5                 region    0.006901\n12        region_density    0.004027\n1                    sex    0.001803"
+    },
+    "tuning_results": null,
+    "final_train_metrics": {
+      "mae": 2065.747315498299,
+      "mse": 13629639.396722844,
+      "rmse": 3691.8341507606815,
+      "r2": 0.9004515777251186,
+      "adjusted_r2": 0.9003582802347017,
+      "mape": 27.712611915832007,
+      "mbe": 42.51117870665298
+    },
+    "final_test_metrics": {
+      "mae": 2642.8174134366877,
+      "mse": 19802521.076487042,
+      "rmse": 4450.002368143982,
+      "r2": 0.8922347342395298,
+      "adjusted_r2": 0.891829601661483,
+      "mape": 36.699639089590946,
+      "mbe": 228.5805354073574
+    },
+    "final_cv_r2_mean": 0.8378953580380729,
+    "final_cv_r2_std": 0.0,
+    "total_training_time": 0.244821,
+    "feature_importance": "                 feature  importance\n11  composite_risk_score    0.319664\n4                 smoker    0.217528\n7        bmi_smoker_risk    0.154228\n6        age_smoker_risk    0.137124\n0                    age    0.043815\n8    age_bmi_interaction    0.036550\n9              age_group    0.029753\n2                    bmi    0.025953\n3               children    0.015388\n10          bmi_category    0.007265\n5                 region    0.006901\n12        region_density    0.004027\n1                    sex    0.001803",
+    "learning_curve": {
+      "train_sizes": "[ 71 142 213 284 356 427 498 569 640 712]",
+      "train_scores_mean": "[0.97584173 0.94074462 0.88479396 0.93298298 0.90738736 0.926394\n 0.91536877 0.92329265 0.92295014 0.91110338]",
+      "train_scores_std": "[0.00422908 0.02271605 0.01395585 0.00138267 0.01656528 0.00809475\n 0.0080015  0.00388958 0.00259163 0.0069856 ]",
+      "val_scores_mean": "[0.7980445  0.80755467 0.80323258 0.82022309 0.82877656 0.83166459\n 0.8346741  0.83227645 0.82997202 0.83778952]",
+      "val_scores_std": "[0.01383185 0.01338264 0.0102725  0.01725608 0.01008751 0.01181764\n 0.01048307 0.00823549 0.00476038 0.00921203]"
+    }
+  },
+  "saved_at": "2025-06-02T22:37:24.366448",
+  "sklearn_version": "sklearn.ensemble._gb"
+}
