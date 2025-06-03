@@ -12,6 +12,7 @@ from typing import Dict, Any, Optional, Union
 import logging
 import json
 import sys
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,13 +23,32 @@ def load_model():
     CARREGA EXATAMENTE O MODELO LOCAL ORIGINAL
     Prioridade: Modelo local exato > Fallbacks robustos
     """
-    base_path = Path(__file__).parent
+    # IMPORTANTE: Streamlit Cloud executa do diretório raiz!
+    # Detectar se estamos no deploy/ ou na raiz
+    current_path = Path(__file__).parent
+    if current_path.name == 'deploy':
+        # Estamos rodando localmente do diretório deploy
+        base_path = current_path
+        root_path = current_path.parent
+    else:
+        # Estamos rodando do diretório raiz (Streamlit Cloud)
+        base_path = Path("deploy")
+        root_path = Path(".")
+    
+    logger.info(f"🔍 Diretório atual: {current_path}")
+    logger.info(f"🔍 Base path: {base_path}")
+    logger.info(f"🔍 Root path: {root_path}")
     
     # 🎯 PRIORIDADE 1: MODELO LOCAL EXATO (CÓPIA DIRETA)
     try:
         model_path = base_path / "gradient_boosting_model_LOCAL_EXACT.pkl"
         metadata_path = base_path / "gradient_boosting_model_LOCAL_EXACT_metadata.json"
         preprocessor_path = base_path / "models" / "model_artifacts" / "preprocessor_LOCAL_EXACT.pkl"
+        
+        logger.info(f"🔍 Procurando modelo em: {model_path}")
+        logger.info(f"🔍 Modelo existe: {model_path.exists()}")
+        logger.info(f"🔍 Metadata existe: {metadata_path.exists()}")
+        logger.info(f"🔍 Preprocessor existe: {preprocessor_path.exists()}")
         
         if all(p.exists() for p in [model_path, metadata_path, preprocessor_path]):
             logger.info("🎯 Carregando MODELO LOCAL EXATO...")
@@ -80,24 +100,33 @@ def load_model():
     try:
         logger.info("🚀 Criando modelo auto-treinável como fallback...")
         
-        # Carregar dados CSV - múltiplos caminhos possíveis
+        # Carregar dados CSV - CAMINHOS AJUSTADOS PARA STREAMLIT CLOUD
         csv_paths = [
-            Path(__file__).parent.parent / "data" / "insurance.csv",
-            Path(__file__).parent / "data" / "insurance.csv",
+            # Para Streamlit Cloud (executa do diretório raiz)
+            Path("deploy") / "insurance.csv",
             Path("data") / "insurance.csv",
+            # Para execução local do deploy/
+            base_path / "insurance.csv",
+            root_path / "data" / "insurance.csv",
+            # Caminhos absolutos possíveis
             Path("/mount/src/insurancechargesprediction/data/insurance.csv"),
+            Path("/mount/src/insurancechargesprediction/deploy/insurance.csv"),
+            # Fallback simples
             Path("insurance.csv"),
         ]
         
         df = None
         for csv_path in csv_paths:
+            logger.info(f"🔍 Tentando carregar dados de: {csv_path}")
             if csv_path.exists():
                 df = pd.read_csv(csv_path)
-                logger.info(f"✅ Dados carregados: {csv_path}")
+                logger.info(f"✅ Dados carregados de: {csv_path}")
                 break
+            else:
+                logger.info(f"❌ Arquivo não encontrado: {csv_path}")
         
         if df is None:
-            raise FileNotFoundError("❌ insurance.csv não encontrado")
+            raise FileNotFoundError("❌ insurance.csv não encontrado em nenhum local")
         
         # Preparar features EXATAMENTE como o modelo local
         from sklearn.preprocessing import LabelEncoder
@@ -181,6 +210,8 @@ def load_model():
         
     except Exception as e:
         logger.error(f"❌ Falha no modelo auto-treinável: {e}")
+        import traceback
+        logger.error(f"❌ Traceback: {traceback.format_exc()}")
     
     logger.error("❌ TODOS OS MODELOS FALHARAM!")
     return None
@@ -352,6 +383,8 @@ def predict_premium(input_data, model_data):
         
     except Exception as e:
         logger.error(f"❌ Erro na predição: {e}")
+        import traceback
+        logger.error(f"❌ Traceback: {traceback.format_exc()}")
         return {
             'success': False,
             'error': str(e),
