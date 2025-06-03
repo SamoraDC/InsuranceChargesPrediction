@@ -1,0 +1,36 @@
+{
+  "model_type": "streamlit_cloud",
+  "features": [
+    "age",
+    "bmi",
+    "children",
+    "sex",
+    "smoker",
+    "region",
+    "age_smoker_risk",
+    "bmi_smoker_risk",
+    "age_bmi_interaction",
+    "age_group",
+    "bmi_category",
+    "composite_risk_score",
+    "region_density"
+  ],
+  "r2_score": 0.9454598197494485,
+  "training_samples": 1338,
+  "test_prediction": 17292.117975980775,
+  "feature_order": [
+    "age",
+    "bmi",
+    "children",
+    "sex",
+    "smoker",
+    "region",
+    "age_smoker_risk",
+    "bmi_smoker_risk",
+    "age_bmi_interaction",
+    "age_group",
+    "bmi_category",
+    "composite_risk_score",
+    "region_density"
+  ]
+}
