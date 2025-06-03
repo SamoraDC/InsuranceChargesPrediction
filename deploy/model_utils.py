@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Model utilities for insurance premium prediction - VERSÃO FINAL CORRIGIDA
-TODOS OS BUGS CORRIGIDOS - Sistema 100% funcional para Streamlit Cloud
+Model utilities for insurance premium prediction - VERSÃO FINAL SIMPLIFICADA
+SEMPRE USA MODELO AUTO-TREINÁVEL - Zero dependência de arquivos pré-salvos
 """
 
 import pandas as pd
@@ -20,17 +20,14 @@ logger = logging.getLogger(__name__)
 
 def load_model():
     """
-    Sistema DEFINITIVO de carregamento de modelo
-    PRIORIDADE 1: Modelo Streamlit Limpo (sem problemas de estado)
-    PRIORIDADE 2: Modelo auto-treinável como fallback
+    Sistema SIMPLIFICADO que SEMPRE funciona
+    SEMPRE usa modelo auto-treinável - sem dependência de arquivos pré-salvos
     """
     # Detectar ambiente
     current_path = Path(__file__).parent
-    current_working_dir = Path.cwd()
     
     logger.info(f"🔍 Arquivo atual: {__file__}")
     logger.info(f"🔍 Diretório do arquivo: {current_path}")
-    logger.info(f"🔍 Diretório de trabalho: {current_working_dir}")
     
     if current_path.name == 'deploy':
         base_path = current_path
@@ -41,63 +38,9 @@ def load_model():
         root_path = Path(".")
         logger.info("🎯 Modo: STREAMLIT CLOUD (raiz)")
     
-    # 🎯 PRIORIDADE 1: MODELO STREAMLIT LIMPO (NOVO SISTEMA)
+    # 🎯 SEMPRE: MODELO AUTO-TREINÁVEL GARANTIDO
     try:
-        model_path = base_path / "streamlit_model.pkl"
-        metadata_path = base_path / "streamlit_metadata.json"
-        mappings_path = base_path / "streamlit_mappings.json"
-        
-        logger.info(f"🔍 Tentativa 1: MODELO STREAMLIT LIMPO")
-        logger.info(f"🔍 Modelo: {model_path.exists()}")
-        logger.info(f"🔍 Metadata: {metadata_path.exists()}")
-        logger.info(f"🔍 Mappings: {mappings_path.exists()}")
-        
-        if all(p.exists() for p in [model_path, metadata_path, mappings_path]):
-            logger.info("🎯 ✅ CARREGANDO MODELO STREAMLIT LIMPO...")
-            
-            # Carregar modelo
-            model = joblib.load(model_path)
-            logger.info(f"📂 ✅ Modelo carregado: {type(model).__name__}")
-            
-            # VERIFICAÇÃO ROBUSTA DE TREINAMENTO
-            is_trained = verify_model_training(model)
-            if not is_trained:
-                raise ValueError("❌ Modelo streamlit não está treinado!")
-            
-            # Carregar metadados
-            with open(metadata_path, 'r') as f:
-                metadata = json.load(f)
-            
-            # Carregar mapeamentos
-            with open(mappings_path, 'r') as f:
-                mappings = json.load(f)
-            
-            model_data = {
-                'model': model,
-                'mappings': mappings,
-                'metadata': metadata,
-                'model_type': 'streamlit_cloud',  # BUG CORRIGIDO: tipo correto
-                'feature_names': metadata['features']
-            }
-            
-            logger.info("🎉 ✅ MODELO STREAMLIT LIMPO CARREGADO!")
-            logger.info(f"✅ Tipo: {type(model).__name__}")
-            logger.info(f"📊 R²: {metadata['r2_score']:.4f}")
-            logger.info(f"🔧 Features: {len(model_data['feature_names'])}")
-            
-            # Teste obrigatório
-            test_features = create_test_features_streamlit(mappings)
-            test_pred = model.predict(test_features)[0]
-            logger.info(f"🧪 ✅ Teste streamlit: ${test_pred:.2f}")
-            
-            return model_data
-            
-    except Exception as e:
-        logger.error(f"❌ Falha no modelo streamlit: {e}")
-    
-    # 🎯 PRIORIDADE 2: MODELO AUTO-TREINÁVEL (FALLBACK GARANTIDO)
-    try:
-        logger.info("🚀 FALLBACK: Criando modelo auto-treinável...")
+        logger.info("🚀 Criando modelo auto-treinável garantido...")
         
         # Carregar dados
         csv_paths = [
@@ -130,20 +73,23 @@ def load_model():
         model_data = {
             'model': model,
             'mappings': mappings,
-            'model_type': 'auto_trained_exact',  # BUG CORRIGIDO: tipo correto
+            'model_type': 'auto_trained_exact',  # NUNCA MAIS "dummy"!
             'feature_names': get_feature_names(),
             'r2_score': score
         }
         
         logger.info("🎉 ✅ MODELO AUTO-TREINÁVEL CRIADO!")
         logger.info(f"📊 R²: {score:.4f}")
+        logger.info(f"🎯 Tipo: {model_data['model_type']}")  # LOG PARA DEBUG
         
         return model_data
         
     except Exception as e:
         logger.error(f"❌ Falha no modelo auto-treinável: {e}")
+        import traceback
+        logger.error(f"❌ Traceback: {traceback.format_exc()}")
     
-    logger.error("❌ TODOS OS MODELOS FALHARAM!")
+    logger.error("❌ FALHA TOTAL!")
     return None
 
 def verify_model_training(model):
@@ -262,28 +208,24 @@ def get_feature_names():
         'age_group', 'bmi_category', 'composite_risk_score', 'region_density'
     ]
 
-def create_test_features_streamlit(mappings):
-    """
-    Cria features de teste para o modelo streamlit
-    """
-    test_data = [30, 25.0, 1, 1, 0, 0, 0, 0, 750, 1, 1, 13.0, 0.3]
-    return np.array([test_data])
-
 def predict_premium(input_data, model_data):
     """
     Faz predição usando o modelo carregado
-    BUG CORRIGIDO: não mais erro "dummy"
+    BUG CORRIGIDO: verificação de model_data robusta
     """
     try:
         logger.info("🎯 Iniciando predição...")
         
         if model_data is None:
-            raise ValueError("Modelo não carregado")
+            raise ValueError("Modelo não carregado - model_data é None")
+        
+        if 'model' not in model_data:
+            raise ValueError("Modelo não carregado - chave 'model' não encontrada")
         
         model = model_data['model']
         model_type = model_data.get('model_type', 'unknown')
         
-        logger.info(f"🎯 Modelo tipo: {model_type}")  # BUG CORRIGIDO: tipo correto
+        logger.info(f"🎯 Modelo tipo: {model_type}")  # DEBUG: confirmar tipo
         logger.info(f"🎯 Modelo classe: {type(model).__name__}")
         
         # Verificar treinamento
@@ -293,13 +235,8 @@ def predict_premium(input_data, model_data):
         
         logger.info("✅ Modelo verificado - treinado")
         
-        # Preparar features baseado no tipo
-        if model_type == 'streamlit_cloud':
-            features = prepare_features_streamlit(input_data, model_data['mappings'])
-        elif model_type == 'auto_trained_exact':
-            features = prepare_features_auto_trained(input_data, model_data['mappings'])
-        else:
-            raise ValueError(f"Tipo de modelo não suportado: {model_type}")
+        # Preparar features - SEMPRE usa auto_trained_exact agora
+        features = prepare_features_auto_trained(input_data, model_data['mappings'])
         
         # Fazer predição
         prediction = model.predict(features)[0]
@@ -318,6 +255,8 @@ def predict_premium(input_data, model_data):
         
     except Exception as e:
         logger.error(f"❌ Erro na predição: {e}")
+        import traceback
+        logger.error(f"❌ Traceback: {traceback.format_exc()}")
         return {
             'success': False,
             'error': str(e),
@@ -325,71 +264,12 @@ def predict_premium(input_data, model_data):
             'model_type': model_data.get('model_type', 'unknown') if model_data else 'none'
         }
 
-def prepare_features_streamlit(data, mappings):
-    """
-    Prepara features para modelo streamlit
-    """
-    try:
-        # Features básicas
-        age = float(data['age'])
-        bmi = float(data['bmi'])
-        children = int(data['children'])
-        
-        # Usar mapeamentos JSON
-        sex = mappings['sex_mapping'][data['sex'].lower()]
-        smoker = mappings['smoker_mapping'][data['smoker'].lower()]
-        region = mappings['region_mapping'][data['region'].lower()]
-        
-        # Features derivadas
-        age_smoker_risk = age * smoker
-        bmi_smoker_risk = bmi * smoker
-        age_bmi_interaction = age * bmi
-        
-        # Age group
-        if age < 30:
-            age_group = 0
-        elif age < 45:
-            age_group = 1
-        elif age < 60:
-            age_group = 2
-        else:
-            age_group = 3
-        
-        # BMI category
-        if bmi < 18.5:
-            bmi_category = 0
-        elif bmi < 25:
-            bmi_category = 1
-        elif bmi < 30:
-            bmi_category = 2
-        else:
-            bmi_category = 3
-        
-        # Composite risk score
-        composite_risk_score = age * 0.1 + bmi * 0.2 + smoker * 10 + children * 0.5
-        
-        # Region density
-        region_density = mappings['region_density_map'][str(region)]
-        
-        features = [
-            age, bmi, children, sex, smoker, region,
-            age_smoker_risk, bmi_smoker_risk, age_bmi_interaction,
-            age_group, bmi_category, composite_risk_score, region_density
-        ]
-        
-        logger.info(f"✅ Features streamlit preparadas: {len(features)}")
-        return np.array([features])
-        
-    except Exception as e:
-        logger.error(f"❌ Erro preparando features streamlit: {e}")
-        raise
-
 def prepare_features_auto_trained(data, mappings):
     """
     Prepara features para modelo auto-treinável
     """
     try:
-        # Same logic as streamlit but different order potentially
+        # Features básicas
         age = float(data['age'])
         bmi = float(data['bmi'])
         children = int(data['children'])
@@ -539,7 +419,7 @@ def get_recommendations(data: Dict[str, Any]) -> list:
 
 if __name__ == "__main__":
     # Teste do sistema
-    logger.info("🧪 TESTANDO SISTEMA CORRIGIDO...")
+    logger.info("🧪 TESTANDO SISTEMA SIMPLIFICADO...")
     
     model_data = load_model()
     

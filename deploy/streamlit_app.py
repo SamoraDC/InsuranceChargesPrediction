@@ -311,9 +311,9 @@ def t(key: str, lang: str = "en") -> str:
     """Get translation for key in specified language."""
     return TRANSLATIONS.get(lang, {}).get(key, key)
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False, ttl=60)  # TTL curto para forçar refresh
 def cached_load_model():
-    """Load model with caching."""
+    """Load model with caching - Cache curto para evitar modelos antigos."""
     if USE_LOCAL_MODEL is None:
         return None
     elif USE_LOCAL_MODEL:
@@ -326,9 +326,16 @@ def cached_load_model():
     else:
         try:
             model_data = load_model()
-            return {"type": "deployment", "model_data": model_data}
+            # VERIFICAR SE MODELO VÁLIDO
+            if model_data and model_data.get('model_type') != 'dummy':
+                return {"type": "deployment", "model_data": model_data}
+            else:
+                st.error("❌ Modelo inválido detectado - forçando reload")
+                st.cache_resource.clear()  # Limpar cache
+                return None
         except Exception as e:
             st.error(f"Error loading deploy model: {e}")
+            st.cache_resource.clear()  # Limpar cache em caso de erro
             return None
 
 def main():
