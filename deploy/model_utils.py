@@ -255,9 +255,11 @@ def predict_premium(input_data, model_data):
         return {
             'success': True,
             'predicted_premium': prediction,
+            'monthly_premium': prediction / 12,
             'model_type': model_type,
             'features_used': len(model_data.get('feature_names', [])),
-            'input_data': input_data
+            'input_data': input_data,
+            'processing_time_ms': 0
         }
         
     except Exception as e:

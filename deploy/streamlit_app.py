@@ -19,19 +19,26 @@ from pathlib import Path
 import sys
 
 # Add path for local imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+current_dir = Path(__file__).parent
+sys.path.insert(0, str(current_dir))
+sys.path.insert(0, str(current_dir / "src"))
 
 try:
-    # Try to use the same system as local
-    from insurance_prediction.models.predictor import load_production_model, predict_insurance_premium
-    from insurance_prediction.config.settings import Config
-    USE_LOCAL_MODEL = True
-    print("✅ Using local model system (same as app_new.py)")
-except ImportError:
-    # Fallback to deployment model_utils
+    # Try to use the deploy model_utils first
     from model_utils import load_model, predict_premium, get_risk_analysis
     USE_LOCAL_MODEL = False
-    print("⚠️ Using deployment model_utils (fallback)")
+    print("✅ Using deploy model_utils (same model as local)")
+except ImportError:
+    try:
+        # Fallback to local system
+        sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+        from insurance_prediction.models.predictor import load_production_model, predict_insurance_premium
+        from insurance_prediction.config.settings import Config
+        USE_LOCAL_MODEL = True
+        print("✅ Using local model system (fallback)")
+    except ImportError as e:
+        print(f"❌ Failed to import any model system: {e}")
+        USE_LOCAL_MODEL = None
 
 # =============================================================================
 # TRANSLATIONS / TRADUÇÕES
@@ -282,7 +289,9 @@ def t(key: str, lang: str = "en") -> str:
 @st.cache_resource
 def cached_load_model():
     """Load model with caching."""
-    if USE_LOCAL_MODEL:
+    if USE_LOCAL_MODEL is None:
+        return None
+    elif USE_LOCAL_MODEL:
         try:
             predictor = load_production_model()
             return {"type": "local", "predictor": predictor}
@@ -290,8 +299,12 @@ def cached_load_model():
             st.error(f"Error loading local model: {e}")
             return None
     else:
-        model_data = load_model()
-        return {"type": "deployment", "model_data": model_data}
+        try:
+            model_data = load_model()
+            return {"type": "deployment", "model_data": model_data}
+        except Exception as e:
+            st.error(f"Error loading deploy model: {e}")
+            return None
 
 def main():
     # Page configuration
@@ -352,14 +365,18 @@ def main():
         st.sidebar.success(t("model_loaded", lang))
         
         with st.sidebar.expander(t("model_details", lang)):
-            if USE_LOCAL_MODEL:
+            if not USE_LOCAL_MODEL and model_info["type"] == "deployment":
+                st.write(f"**{t('algorithm', lang)}:** Gradient Boosting (Advanced)")
+                st.write(f"**{t('version', lang)}:** 2.0.0 (Deploy - Same as Local)")
+                st.write(f"**Features:** 13 (with feature engineering)")
+                st.write(f"**Model Type:** {model_info['model_data'].get('model_type', 'Advanced')}")
+            elif USE_LOCAL_MODEL and model_info["type"] == "local":
                 st.write(f"**{t('algorithm', lang)}:** Gradient Boosting (Advanced)")
                 st.write(f"**{t('version', lang)}:** 2.0.0 (Local System)")
                 st.write(f"**Features:** 13 (with feature engineering)")
             else:
-                st.write(f"**{t('algorithm', lang)}:** Gradient Boosting")
-                st.write(f"**{t('version', lang)}:** 1.0.0 (Deployment)")
-                st.write(f"**Features:** 8 (simplified)")
+                st.write(f"**{t('algorithm', lang)}:** Unknown")
+                st.write(f"**{t('version', lang)}:** N/A")
     else:
         st.sidebar.error(t("model_not_loaded", lang))
 
@@ -453,20 +470,25 @@ def individual_prediction_tab(lang: str, model_data):
             }
             
             if model_data:
-                if USE_LOCAL_MODEL and model_data["type"] == "local":
-                    # Use local model system
+                if not USE_LOCAL_MODEL and model_data["type"] == "deployment":
+                    # Use deployment model system (preferred)
+                    try:
+                        result = predict_premium(input_data, model_data["model_data"])
+                        if result["success"]:
+                            show_prediction_results(result, input_data, lang)
+                        else:
+                            st.error(f"{t('prediction_error', lang)} {result['error']}")
+                    except Exception as e:
+                        st.error(f"{t('prediction_error', lang)} {e}")
+                elif USE_LOCAL_MODEL and model_data["type"] == "local":
+                    # Use local model system (fallback)
                     try:
                         result = predict_insurance_premium(**input_data)
                         show_prediction_results_local(result, input_data, lang)
                     except Exception as e:
                         st.error(f"{t('prediction_error', lang)} {e}")
                 else:
-                    # Use deployment model system  
-                    result = predict_premium(input_data, model_data["model_data"])
-                    if result["success"]:
-                        show_prediction_results(result, input_data, lang)
-                    else:
-                        st.error(f"{t('prediction_error', lang)} {result['error']}")
+                    st.error(t("model_unavailable", lang))
             else:
                 st.error(t("model_unavailable", lang))
 
