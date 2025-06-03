@@ -32,7 +32,7 @@ except Exception as e:
     
     # Test fallback
     try:
-        from model_utils import predict_premium
+        from deploy.model_utils import predict_premium
         
         test_data = {
             'age': 25,
@@ -62,7 +62,7 @@ except:
 
 # Test deployment  
 try:
-    from model_utils import predict_premium
+    from deploy.model_utils import predict_premium
     test_data = {'age': 25, 'sex': 'male', 'bmi': 22.6, 'children': 0, 'smoker': 'no', 'region': 'southeast'}
     result2 = predict_premium(test_data)
     if result2['success']:
