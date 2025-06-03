@@ -80,11 +80,13 @@ def load_model():
     try:
         logger.info("🚀 Criando modelo auto-treinável como fallback...")
         
-        # Carregar dados CSV
+        # Carregar dados CSV - múltiplos caminhos possíveis
         csv_paths = [
             Path(__file__).parent.parent / "data" / "insurance.csv",
+            Path(__file__).parent / "data" / "insurance.csv",
             Path("data") / "insurance.csv",
             Path("/mount/src/insurancechargesprediction/data/insurance.csv"),
+            Path("insurance.csv"),
         ]
         
         df = None
@@ -203,7 +205,7 @@ def prepare_features_local_exact(data, preprocessor=None):
         # Region mapping (mesmo do local)
         region_map = {'northeast': 0, 'northwest': 1, 'southeast': 2, 'southwest': 3}
         region = region_map.get(data['region'].lower(), 0)
-        
+    
         # Features derivadas (EXATAS do local)
         age_smoker_risk = age * smoker
         bmi_smoker_risk = bmi * smoker
