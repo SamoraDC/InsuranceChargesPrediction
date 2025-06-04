@@ -216,6 +216,6 @@ cd deploy && python model_utils.py
 **🚀 Ready to predict insurance premiums?**  
 **🚀 Pronto para predizer prêmios de seguro?**
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)]([https://share.streamlit.io/](https://davisamora-fiaptechchallenge-01-insurencechargesprediction.streamlit.app/))
 
 </div>
